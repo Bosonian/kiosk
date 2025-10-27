@@ -6,8 +6,7 @@
   <meta name="description" content="Notaufnahme Kiosk - Incoming Stroke Cases">
   <title>🏥 Notaufnahme Kiosk - iGFAP</title>
   <link rel="icon" type="image/png" href="/icons/icon-192.png">
-  <script type="module" crossorigin src="/kiosk/assets/index-DNCO7RZm.js"></script>
-  <link rel="stylesheet" crossorigin href="/kiosk/assets/index-CWjLlPXA.css">
+  <script type="module" crossorigin src="/kiosk/assets/index-DU4x42Gv.js"></script>
 </head>
 <body>
   <div id="app">
@@ -15,7 +14,9 @@
       <div class="header-content">
         <h1>🏥 Notaufnahme - Incoming Cases</h1>
         <div class="header-meta">
-          <span id="hospitalName">Klinikum</span>
+          <select id="hospitalSelector" class="hospital-selector">
+            <option value="">Loading hospitals...</option>
+          </select>
           <span id="currentTime">--:--</span>
           <span id="caseCount" class="case-count-badge">0 Cases</span>
           <span id="connectionStatus" class="status-indicator">●</span>

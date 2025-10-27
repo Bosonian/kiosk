@@ -62,6 +62,30 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
+.hospital-selector {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  max-width: 350px;
+}
+
+.hospital-selector:hover {
+  border-color: var(--color-low);
+  background: var(--bg-secondary);
+}
+
+.hospital-selector:focus {
+  outline: none;
+  border-color: var(--color-low);
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
+}
+
 .header-content {
   max-width: 1800px;
   margin: 0 auto;

@@ -17,8 +17,8 @@ let audioContext = null;
 async function initializeKiosk() {
   console.log('[Kiosk] Initializing...', KIOSK_CONFIG);
 
-  // Update hospital name
-  document.getElementById('hospitalName').textContent = KIOSK_CONFIG.hospitalName;
+  // Initialize hospital selector
+  initializeHospitalSelector();
 
   // Start clock
   updateClock();
@@ -95,6 +95,34 @@ function handleError(error) {
       `;
     }
   }
+}
+
+/**
+ * Initialize hospital selector
+ */
+function initializeHospitalSelector() {
+  // Import available hospitals and setHospital function
+  const selector = document.getElementById('hospitalSelector');
+  if (!selector) return;
+
+  // Dynamically import hospitals list
+  import('./config.js').then(({ AVAILABLE_HOSPITALS, setHospital }) => {
+    // Populate selector
+    selector.innerHTML = AVAILABLE_HOSPITALS.map(h =>
+      `<option value="${h.id}" ${h.id === KIOSK_CONFIG.hospitalId || (h.id === 'ALL' && !KIOSK_CONFIG.hospitalId) ? 'selected' : ''}>${h.name}</option>`
+    ).join('');
+
+    // Handle selection changes
+    selector.addEventListener('change', (e) => {
+      const hospitalId = e.target.value;
+      if (confirm(`Switch to ${e.target.options[e.target.selectedIndex].text}?\n\nThis will reload the page.`)) {
+        setHospital(hospitalId);
+      } else {
+        // Restore previous selection
+        selector.value = KIOSK_CONFIG.hospitalId || 'ALL';
+      }
+    });
+  });
 }
 
 /**

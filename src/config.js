@@ -20,12 +20,12 @@ export const KIOSK_CONFIG = {
   // GPS stale warning threshold
   staleGpsMinutes: 5,
 
-  // Hospital ID (configure per kiosk installation)
+  // Hospital ID (can be changed via UI selector)
   // Leave as null to show all cases, or set to specific hospital ID
-  hospitalId: 'BY-NS-001', // LMU Klinikum München - Großhadern
+  hospitalId: localStorage.getItem('kiosk_hospital_id') || 'BY-NS-001',
 
-  // Hospital name for display
-  hospitalName: 'LMU Klinikum München - Notaufnahme',
+  // Hospital name for display (updated dynamically)
+  hospitalName: localStorage.getItem('kiosk_hospital_name') || 'LMU Klinikum München - Notaufnahme',
 
   // Google Maps API Key (for live tracking map)
   googleMapsApiKey: 'AIzaSyACBndIj8HD1wwZ4Vw8PDDI0bIe6DoBExI',
@@ -41,6 +41,31 @@ export const KIOSK_CONFIG = {
   // Theme
   theme: 'dark', // 'dark' or 'light'
 };
+
+// Available hospitals for selector
+export const AVAILABLE_HOSPITALS = [
+  { id: 'BY-NS-001', name: 'LMU Klinikum München - Großhadern' },
+  { id: 'BY-NS-002', name: 'Klinikum Rechts der Isar' },
+  { id: 'BY-NS-003', name: 'Helios Klinikum München West' },
+  { id: 'BY-NS-004', name: 'Klinikum Bogenhausen' },
+  { id: 'BW-NS-001', name: 'Universitätsklinikum Tübingen' },
+  { id: 'BW-NS-002', name: 'Klinikum Stuttgart' },
+  { id: 'BW-NS-003', name: 'Universitätsklinikum Freiburg' },
+  { id: 'ALL', name: '🌐 All Hospitals (Show All Cases)' },
+];
+
+// Function to update hospital selection
+export function setHospital(hospitalId) {
+  const hospital = AVAILABLE_HOSPITALS.find(h => h.id === hospitalId);
+  if (hospital) {
+    localStorage.setItem('kiosk_hospital_id', hospitalId === 'ALL' ? null : hospitalId);
+    localStorage.setItem('kiosk_hospital_name', hospital.name);
+    KIOSK_CONFIG.hospitalId = hospitalId === 'ALL' ? null : hospitalId;
+    KIOSK_CONFIG.hospitalName = hospital.name;
+    // Reload to apply changes
+    window.location.reload();
+  }
+}
 
 export const URGENCY_CONFIG = {
   IMMEDIATE: {
