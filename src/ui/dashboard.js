@@ -54,6 +54,24 @@ function sortCases(cases) {
 }
 
 /**
+ * Generate unique patient code from case ID
+ */
+function generatePatientCode(caseId) {
+  if (!caseId) return 'PAT-0000';
+
+  // Create a simple hash from the case ID
+  let hash = 0;
+  for (let i = 0; i < caseId.length; i++) {
+    hash = ((hash << 5) - hash) + caseId.charCodeAt(i);
+    hash = hash & hash; // Convert to 32bit integer
+  }
+
+  // Convert to positive 4-digit number
+  const code = Math.abs(hash % 10000).toString().padStart(4, '0');
+  return `PAT-${code}`;
+}
+
+/**
  * Render individual case card
  */
 function renderCaseCard(caseData) {
@@ -63,11 +81,14 @@ function renderCaseCard(caseData) {
   const eta = caseData.tracking?.duration || '?';
   const distance = caseData.tracking?.distance || '?';
 
+  // Generate unique patient code
+  const patientCode = generatePatientCode(caseData.id);
+
   // Check GPS staleness
   const isGpsStale = caseData.tracking?.gpsStale || false;
 
-  // Calculate time since received
-  const receivedAgo = getTimeAgo(caseData.createdAt);
+  // Calculate time since received (use receivedAt if available, fallback to createdAt)
+  const receivedAgo = getTimeAgo(caseData.receivedAt || caseData.createdAt);
 
   return `
     <div class="case-card ${caseData.urgency.toLowerCase()} ${caseData.isNew ? 'new-case' : ''}"
@@ -79,27 +100,19 @@ function renderCaseCard(caseData) {
           ${urgencyConfig.icon} ${caseData.urgency}
         </div>
         <div class="case-meta">
-          <span class="ambulance-id">${caseData.ambulanceId}</span>
+          <span class="patient-code">${patientCode}</span>
           <span class="module-type">${caseData.moduleType}</span>
         </div>
       </div>
 
       <div class="case-risks">
         <div class="risk-circle-container">
-          <div class="risk-circle ${ichPercent > 70 ? 'critical' : ichPercent > 50 ? 'high' : 'medium'}"
-               style="background: conic-gradient(${getRiskColor(ichPercent)} ${ichPercent}%, rgba(255,255,255,0.1) 0%)">
-            <div class="risk-value">${ichPercent}%</div>
-          </div>
-          <div class="risk-label">ICH</div>
+          ${renderRiskRingSVG(ichPercent, 'ICH')}
         </div>
 
         ${lvoPercent !== null ? `
           <div class="risk-circle-container">
-            <div class="risk-circle ${lvoPercent > 50 ? 'high' : 'medium'}"
-                 style="background: conic-gradient(${getRiskColor(lvoPercent)} ${lvoPercent}%, rgba(255,255,255,0.1) 0%)">
-              <div class="risk-value">${lvoPercent}%</div>
-            </div>
-            <div class="risk-label">LVO</div>
+            ${renderRiskRingSVG(lvoPercent, 'LVO')}
           </div>
         ` : ''}
       </div>
@@ -120,6 +133,56 @@ function renderCaseCard(caseData) {
         <span class="view-details">View Details →</span>
       </div>
     </div>
+  `;
+}
+
+/**
+ * Render SVG risk ring for dashboard cards
+ */
+function renderRiskRingSVG(percent, label) {
+  const color = getRiskColor(percent);
+  const circumference = Math.PI * 100; // 2πr where r=50
+  const offset = circumference * (1 - percent / 100);
+  const riskClass = percent > 70 ? 'critical' : percent > 50 ? 'high' : percent > 30 ? 'medium' : 'low';
+
+  return `
+    <svg class="risk-ring-svg ${riskClass}" viewBox="0 0 120 120" width="80" height="80">
+      <!-- Background circle -->
+      <circle
+        cx="60"
+        cy="60"
+        r="50"
+        fill="none"
+        stroke="rgba(255,255,255,0.2)"
+        stroke-width="8"/>
+
+      <!-- Progress circle -->
+      <circle
+        cx="60"
+        cy="60"
+        r="50"
+        fill="none"
+        stroke="${color}"
+        stroke-width="8"
+        stroke-dasharray="${circumference}"
+        stroke-dashoffset="${offset}"
+        stroke-linecap="round"
+        transform="rotate(-90 60 60)"/>
+
+      <!-- Percentage text -->
+      <text
+        x="60"
+        y="65"
+        text-anchor="middle"
+        font-family="system-ui, -apple-system, sans-serif"
+        font-size="20"
+        font-weight="bold"
+        fill="#ffffff"
+        style="pointer-events: none;">
+        ${percent}%
+      </text>
+    </svg>
+    <div class="risk-label">${label}</div>
   `;
 }
 

@@ -197,6 +197,58 @@ export class CaseListener {
   }
 
   /**
+   * Dismiss/archive a case
+   * @param {string} caseId - Case ID to dismiss
+   * @returns {Promise} - Resolution of API call
+   */
+  async dismissCase(caseId) {
+    try {
+      const url = `${this.baseUrl}/archive-case`;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+          caseId,
+          reason: 'dismissed_by_kiosk',
+        }),
+        signal: AbortSignal.timeout(8000),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to dismiss case');
+      }
+
+      // Remove from local cache
+      this.cases.delete(caseId);
+      console.log('[CaseListener] Case dismissed:', caseId);
+
+      // Trigger update to refresh UI
+      if (this.onUpdate) {
+        this.onUpdate({
+          cases: Array.from(this.cases.values()),
+          timestamp: new Date().toISOString(),
+          count: this.cases.size,
+        });
+      }
+
+      return data;
+    } catch (error) {
+      console.error('[CaseListener] Dismiss error:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get connection status
    */
   getStatus() {

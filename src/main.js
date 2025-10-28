@@ -21,6 +21,9 @@ async function initializeKiosk() {
   // Initialize hospital selector
   initializeHospitalSelector();
 
+  // Initialize theme
+  initializeTheme();
+
   // Start clock
   updateClock();
   setInterval(updateClock, 1000);
@@ -127,6 +130,49 @@ function initializeHospitalSelector() {
       }
     });
   });
+}
+
+/**
+ * Initialize theme
+ */
+function initializeTheme() {
+  // Get saved theme or use default from config
+  const savedTheme = localStorage.getItem('kiosk_theme') || KIOSK_CONFIG.theme;
+  applyTheme(savedTheme);
+
+  // Add theme toggle button listener
+  const themeToggle = document.getElementById('themeToggle');
+  if (themeToggle) {
+    themeToggle.addEventListener('click', toggleTheme);
+  }
+
+  console.log('[Kiosk] Theme initialized:', savedTheme);
+}
+
+/**
+ * Toggle between light and dark theme
+ */
+function toggleTheme() {
+  const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+  applyTheme(newTheme);
+  localStorage.setItem('kiosk_theme', newTheme);
+
+  console.log('[Kiosk] Theme switched to:', newTheme);
+}
+
+/**
+ * Apply theme to document
+ */
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+
+  // Update theme toggle icon
+  const themeIcon = document.querySelector('.theme-icon');
+  if (themeIcon) {
+    themeIcon.textContent = theme === 'dark' ? '☀️' : '🌙';
+  }
 }
 
 /**
@@ -245,6 +291,15 @@ function attachEventListeners() {
       }
     }
 
+    // Dismiss case button
+    const dismissButton = e.target.closest('.dismiss-case-button');
+    if (dismissButton) {
+      const caseId = dismissButton.dataset.caseId;
+      if (caseId) {
+        handleDismissCase(caseId);
+      }
+    }
+
     // Close modal
     if (e.target.classList.contains('modal-overlay') || e.target.classList.contains('close-modal')) {
       closeModal();
@@ -265,6 +320,67 @@ function attachEventListeners() {
       caseListener.fetchCases();
     }
   });
+}
+
+/**
+ * Handle case dismissal with confirmation
+ */
+async function handleDismissCase(caseId) {
+  const caseData = caseListener.getCase(caseId);
+  if (!caseData) {
+    console.warn('[Kiosk] Case not found:', caseId);
+    return;
+  }
+
+  // Show confirmation dialog
+  const confirmMessage = `Are you sure you want to dismiss this case?\n\n` +
+                        `Ambulance: ${caseData.ambulanceId}\n` +
+                        `Module: ${caseData.moduleType}\n` +
+                        `ICH Risk: ${Math.round((caseData.results?.ich?.probability || 0) * 100)}%\n\n` +
+                        `This action will archive the case.`;
+
+  const confirmed = confirm(confirmMessage);
+
+  if (!confirmed) {
+    console.log('[Kiosk] Case dismissal cancelled');
+    return;
+  }
+
+  try {
+    // Disable button to prevent double-click
+    const dismissButton = document.querySelector(`[data-case-id="${caseId}"]`);
+    if (dismissButton) {
+      dismissButton.disabled = true;
+      dismissButton.textContent = 'Dismissing...';
+    }
+
+    // Call API to dismiss case
+    await caseListener.dismissCase(caseId);
+
+    console.log('[Kiosk] Case dismissed successfully:', caseId);
+
+    // Close modal
+    closeModal();
+
+    // Show success feedback (optional flash)
+    document.body.classList.add('flash-success');
+    setTimeout(() => {
+      document.body.classList.remove('flash-success');
+    }, 500);
+
+  } catch (error) {
+    console.error('[Kiosk] Failed to dismiss case:', error);
+
+    // Show error alert
+    alert(`Failed to dismiss case:\n${error.message}\n\nPlease try again or contact support.`);
+
+    // Re-enable button
+    const dismissButton = document.querySelector(`[data-case-id="${caseId}"]`);
+    if (dismissButton) {
+      dismissButton.disabled = false;
+      dismissButton.textContent = '🗑️ Dismiss Case';
+    }
+  }
 }
 
 /**

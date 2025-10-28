@@ -7,9 +7,7 @@ const isDevelopment = import.meta.env.DEV;
 
 export const KIOSK_CONFIG = {
   // API Configuration
-  caseSharingUrl: isDevelopment
-    ? 'http://localhost:8080' // Local Cloud Function emulator
-    : 'https://case-sharing-564499947017.europe-west3.run.app',
+  caseSharingUrl: 'https://case-sharing-564499947017.europe-west3.run.app',
 
   // Polling interval (milliseconds)
   pollInterval: 5000, // 5 seconds
