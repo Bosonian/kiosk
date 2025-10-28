@@ -282,3 +282,164 @@ export function createTimeoutSignal(timeoutMs) {
 export function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
+
+/**
+ * Medical field label mapping for consistent terminology
+ * Maps technical field names to user-friendly medical labels
+ */
+const FIELD_LABEL_MAP = {
+  // Age and demographics
+  age_years: 'Alter / Age',
+  age: 'Alter / Age',
+
+  // Blood pressure
+  systolic_bp: 'Systolischer Blutdruck / Systolic BP',
+  diastolic_bp: 'Diastolischer Blutdruck / Diastolic BP',
+  systolic_blood_pressure: 'Systolischer Blutdruck / Systolic BP',
+  diastolic_blood_pressure: 'Diastolischer Blutdruck / Diastolic BP',
+  blood_pressure_systolic: 'Systolischer Blutdruck / Systolic BP',
+  blood_pressure_diastolic: 'Diastolischer Blutdruck / Diastolic BP',
+
+  // Biomarkers
+  gfap_value: 'GFAP-Wert / GFAP Level',
+  gfap: 'GFAP-Wert / GFAP Level',
+  gfap_level: 'GFAP-Wert / GFAP Level',
+
+  // Clinical scores
+  fast_ed_score: 'FAST-ED Score',
+  fast_ed: 'FAST-ED Score',
+  fast_ed_total: 'FAST-ED Score',
+  nihss: 'NIHSS Score',
+  nihss_score: 'NIHSS Score',
+
+  // Neurological symptoms
+  vigilanzminderung: 'Vigilanzminderung / Reduced Consciousness',
+  vigilance_reduction: 'Vigilanzminderung / Reduced Consciousness',
+  reduced_consciousness: 'Vigilanzminderung / Reduced Consciousness',
+  armparese: 'Armparese / Arm Weakness',
+  arm_paresis: 'Armparese / Arm Weakness',
+  arm_weakness: 'Armparese / Arm Weakness',
+  beinparese: 'Beinparese / Leg Weakness',
+  leg_paresis: 'Beinparese / Leg Weakness',
+  leg_weakness: 'Beinparese / Leg Weakness',
+  eye_deviation: 'Blickdeviation / Eye Deviation',
+  blickdeviation: 'Blickdeviation / Eye Deviation',
+  headache: 'Kopfschmerzen / Headache',
+  kopfschmerzen: 'Kopfschmerzen / Headache',
+  nausea: 'Übelkeit / Nausea',
+  vomiting: 'Erbrechen / Vomiting',
+  aphasia: 'Aphasie / Aphasia',
+  dysarthria: 'Dysarthrie / Dysarthria',
+  ataxia: 'Ataxie / Ataxia',
+  facial_paresis: 'Gesichtsparese / Facial Weakness',
+
+  // Medical history
+  atrial_fibrillation: 'Vorhofflimmern / Atrial Fibrillation',
+  vorhofflimmern: 'Vorhofflimmern / Atrial Fibrillation',
+  anticoagulated_noak: 'Antikoagulation (NOAK) / Anticoagulation (NOAC)',
+  anticoagulation: 'Antikoagulation / Anticoagulation',
+  antiplatelets: 'Thrombozytenaggregationshemmer / Antiplatelets',
+  thrombozytenaggregationshemmer: 'Thrombozytenaggregationshemmer / Antiplatelets',
+  diabetes: 'Diabetes Mellitus',
+  hypertension: 'Arterielle Hypertonie / Hypertension',
+  prior_stroke: 'Schlaganfall (Anamnese) / Prior Stroke',
+  prior_tia: 'TIA (Anamnese) / Prior TIA',
+
+  // Timing
+  symptom_onset: 'Symptombeginn / Symptom Onset',
+  onset_time: 'Symptombeginn / Symptom Onset',
+  time_since_onset: 'Zeit seit Symptombeginn / Time Since Onset',
+};
+
+/**
+ * Pattern-based replacements for common medical terms
+ */
+const PATTERN_REPLACEMENTS = [
+  { pattern: /_score$/i, replacement: ' Score' },
+  { pattern: /_value$/i, replacement: ' Wert' },
+  { pattern: /_bp$/i, replacement: ' Blutdruck' },
+  { pattern: /_years?$/i, replacement: '' },
+  { pattern: /^ich_/i, replacement: 'ICH ' },
+  { pattern: /^lvo_/i, replacement: 'LVO ' },
+  { pattern: /parese$/i, replacement: 'parese / Weakness' },
+  { pattern: /deviation$/i, replacement: 'deviation / Deviation' },
+];
+
+/**
+ * Format driver/field names with consistent medical terminology
+ * @param {string} fieldName - Technical field name
+ * @returns {string} User-friendly medical label
+ */
+export function formatDriverName(fieldName) {
+  if (!fieldName) return '';
+
+  // First try exact match
+  const mapped = FIELD_LABEL_MAP[fieldName.toLowerCase()];
+  if (mapped) return mapped;
+
+  // Apply pattern-based replacements
+  let formatted = fieldName;
+  PATTERN_REPLACEMENTS.forEach(({ pattern, replacement }) => {
+    formatted = formatted.replace(pattern, replacement);
+  });
+
+  // Clean up and format
+  formatted = formatted
+    .replace(/_/g, ' ') // Replace underscores with spaces
+    .replace(/\b\w/g, (l) => l.toUpperCase()) // Title case
+    .trim();
+
+  return formatted;
+}
+
+/**
+ * Format field labels for summary display
+ * @param {string} fieldName - Technical field name
+ * @returns {string} User-friendly summary label
+ */
+export function formatSummaryLabel(fieldName) {
+  const friendlyLabel = formatDriverName(fieldName);
+  // Remove units from labels as they're shown in values
+  return friendlyLabel.replace(/\s*\([^)]*\)\s*/g, '').trim();
+}
+
+/**
+ * Format field values for display with appropriate units
+ * @param {any} value - Field value
+ * @param {string} fieldName - Field name for context
+ * @returns {string} Formatted display value
+ */
+export function formatDisplayValue(value, fieldName = '') {
+  if (value === null || value === undefined || value === '') {
+    return '—';
+  }
+
+  if (typeof value === 'boolean') {
+    return value ? '✓ Ja / Yes' : '✗ Nein / No';
+  }
+
+  if (typeof value === 'number') {
+    const lower = fieldName.toLowerCase();
+    // Add units based on field type
+    if (lower.includes('bp') || lower.includes('blood_pressure')) {
+      return `${value} mmHg`;
+    }
+    if (lower.includes('gfap')) {
+      return `${value} pg/mL`;
+    }
+    if (lower.includes('age')) {
+      return `${value} Jahre / years`;
+    }
+    if (lower.includes('score')) {
+      return value.toString();
+    }
+    if (lower.includes('time') || lower.includes('duration')) {
+      return `${value} min`;
+    }
+
+    // Default number formatting
+    return Number.isInteger(value) ? value.toString() : value.toFixed(1);
+  }
+
+  return value.toString();
+}
