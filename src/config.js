@@ -22,10 +22,16 @@ export const KIOSK_CONFIG = {
 
   // Hospital ID (can be changed via UI selector)
   // Leave as null to show all cases, or set to specific hospital ID
-  hospitalId: localStorage.getItem('kiosk_hospital_id') || 'BY-NS-001',
+  hospitalId: (() => {
+    const stored = localStorage.getItem('kiosk_hospital_id');
+    // Explicitly check for null (not set) vs empty string (ALL selected)
+    if (stored === null) return 'BY-NS-001'; // Default on first load
+    if (stored === '') return null; // "ALL" hospitals
+    return stored; // Specific hospital
+  })(),
 
   // Hospital name for display (updated dynamically)
-  hospitalName: localStorage.getItem('kiosk_hospital_name') || 'LMU Klinikum München - Notaufnahme',
+  hospitalName: localStorage.getItem('kiosk_hospital_name') || 'LMU Klinikum München - Großhadern',
 
   // Google Maps API Key (for live tracking map)
   googleMapsApiKey: 'AIzaSyACBndIj8HD1wwZ4Vw8PDDI0bIe6DoBExI',

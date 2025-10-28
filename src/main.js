@@ -109,9 +109,12 @@ function initializeHospitalSelector() {
   // Dynamically import hospitals list
   import('./config.js').then(({ AVAILABLE_HOSPITALS, setHospital }) => {
     // Populate selector
-    selector.innerHTML = AVAILABLE_HOSPITALS.map(h =>
-      `<option value="${h.id}" ${h.id === KIOSK_CONFIG.hospitalId || (h.id === 'ALL' && !KIOSK_CONFIG.hospitalId) ? 'selected' : ''}>${h.name}</option>`
-    ).join('');
+    selector.innerHTML = AVAILABLE_HOSPITALS.map(h => {
+      // Check if this option should be selected
+      const isSelected = (h.id === 'ALL' && KIOSK_CONFIG.hospitalId === null) ||
+                         (h.id === KIOSK_CONFIG.hospitalId);
+      return `<option value="${h.id}" ${isSelected ? 'selected' : ''}>${h.name}</option>`;
+    }).join('');
 
     // Handle selection changes
     selector.addEventListener('change', (e) => {
@@ -120,7 +123,7 @@ function initializeHospitalSelector() {
         setHospital(hospitalId);
       } else {
         // Restore previous selection
-        selector.value = KIOSK_CONFIG.hospitalId || 'ALL';
+        selector.value = KIOSK_CONFIG.hospitalId === null ? 'ALL' : KIOSK_CONFIG.hospitalId;
       }
     });
   });
