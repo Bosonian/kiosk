@@ -58,8 +58,14 @@ export const AVAILABLE_HOSPITALS = [
 export function setHospital(hospitalId) {
   const hospital = AVAILABLE_HOSPITALS.find(h => h.id === hospitalId);
   if (hospital) {
-    localStorage.setItem('kiosk_hospital_id', hospitalId === 'ALL' ? null : hospitalId);
-    localStorage.setItem('kiosk_hospital_name', hospital.name);
+    // Store the actual value or empty string for "ALL"
+    if (hospitalId === 'ALL') {
+      localStorage.setItem('kiosk_hospital_id', '');
+      localStorage.setItem('kiosk_hospital_name', hospital.name);
+    } else {
+      localStorage.setItem('kiosk_hospital_id', hospitalId);
+      localStorage.setItem('kiosk_hospital_name', hospital.name);
+    }
     KIOSK_CONFIG.hospitalId = hospitalId === 'ALL' ? null : hospitalId;
     KIOSK_CONFIG.hospitalName = hospital.name;
     // Reload to apply changes

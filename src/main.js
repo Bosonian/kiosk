@@ -2,6 +2,7 @@
  * Kiosk Main Application
  * Entry point for Notaufnahme kiosk display
  */
+import './styles.css';
 import { KIOSK_CONFIG } from './config.js';
 import { caseListener } from './services/case-listener.js';
 import { renderDashboard } from './ui/dashboard.js';
