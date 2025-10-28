@@ -3,7 +3,15 @@
  * Shows full assessment results for a case
  * Enhanced with PWA-style beautiful results display
  */
-import { getRiskColor, getRiskLevel, formatTime, formatLabel } from '../utils.js';
+import {
+  getRiskColor,
+  getRiskLevel,
+  formatTime,
+  formatLabel,
+  formatDriverName,
+  formatSummaryLabel,
+  formatDisplayValue
+} from '../utils.js';
 
 /**
  * Get risk level classification for styling
@@ -72,10 +80,13 @@ function renderDetailView(caseData) {
         <div class="content-section">
           <h3>🎯 Risikobewertung / Risk Assessment</h3>
           <div class="${layoutClass}">
-            ${renderEnhancedRiskCard('ich', ichPercent, ichLevel, results)}
-            ${lvoPercent !== null ? renderEnhancedRiskCard('lvo', lvoPercent, lvoLevel, results) : ''}
+            ${renderEnhancedRiskCard('ich', ichPercent, ichLevel, results, formData)}
+            ${lvoPercent !== null ? renderEnhancedRiskCard('lvo', lvoPercent, lvoLevel, results, formData) : ''}
           </div>
         </div>
+
+        <!-- Entscheidungshilfe Speedometer (shown if meaningful signal) -->
+        ${renderEntscheidungshilfe(ichPercent, lvoPercent)}
 
         <!-- Enhanced Drivers Section -->
         ${renderEnhancedDriversSection(results)}
@@ -128,9 +139,10 @@ function renderDetailView(caseData) {
  * @param {number} percent - Risk percentage (0-100)
  * @param {string} level - Risk level ('critical', 'high', 'normal')
  * @param {object} results - Full results object
+ * @param {object} formData - Form data (for GFAP volume calculation)
  * @returns {string} HTML for enhanced risk card
  */
-function renderEnhancedRiskCard(type, percent, level, results) {
+function renderEnhancedRiskCard(type, percent, level, results, formData = null) {
   const icons = { ich: '🩸', lvo: '🧠' };
   const titles = {
     ich: 'ICH Risiko / ICH Risk',
@@ -143,6 +155,9 @@ function renderEnhancedRiskCard(type, percent, level, results) {
   // SVG circle progress
   const circumference = Math.PI * 100; // For radius 50
   const offset = circumference * (1 - percent / 100);
+
+  // For ICH cards, try to add volume ring if GFAP data available
+  const volumeRingHtml = type === 'ich' && formData ? renderICHVolumeRing(formData) : '';
 
   return `
     <div class="enhanced-risk-card ${type} ${level}">
@@ -181,6 +196,7 @@ function renderEnhancedRiskCard(type, percent, level, results) {
               </div>
               <div class="circle-label">${type.toUpperCase()} Wahrscheinlichkeit</div>
             </div>
+            ${volumeRingHtml}
           </div>
           <div class="risk-level ${level}">${riskLevelText}</div>
         </div>
@@ -307,7 +323,8 @@ function renderEnhancedDriversPanel(drivers, title, type, probability) {
  * @returns {string} HTML for driver item
  */
 function renderCompactDriver(driver, type, relativeImportance, barWidth) {
-  const cleanLabel = formatLabel(driver.label);
+  // Use medical terminology formatter for better labels
+  const cleanLabel = formatDriverName(driver.label);
 
   return `
     <div class="compact-driver-item">
@@ -335,22 +352,112 @@ function getUrgencyColor(urgency) {
 }
 
 
+/**
+ * Render enhanced input summary matching PWA style
+ * @param {object} formData - Form data from case
+ * @returns {string} HTML for enhanced input summary
+ */
 function renderFormData(formData) {
   if (!formData || Object.keys(formData).length === 0) {
-    return '<p>No assessment data available</p>';
+    return '<p class="no-data">Keine Bewertungsdaten verfügbar / No assessment data available</p>';
   }
 
-  return Object.entries(formData)
-    .filter(([key, value]) => value !== null && value !== undefined && value !== '')
-    .map(
-      ([key, value]) => `
-      <div class="data-row">
-        <div class="data-label">${formatLabel(key)}</div>
-        <div class="data-value">${value}</div>
+  // Check if formData is structured by modules or flat
+  const isModularData = typeof Object.values(formData)[0] === 'object'
+    && !Array.isArray(Object.values(formData)[0])
+    && Object.values(formData)[0] !== null;
+
+  if (isModularData) {
+    // Render modular data (grouped by assessment module)
+    return renderModularInputSummary(formData);
+  }
+
+  // Render flat data
+  return renderFlatInputSummary(formData);
+}
+
+/**
+ * Render modular input summary grouped by assessment modules
+ * @param {object} formData - Modular form data
+ * @returns {string} HTML for modular summary
+ */
+function renderModularInputSummary(formData) {
+  let summaryHtml = '';
+
+  Object.entries(formData).forEach(([module, data]) => {
+    if (data && typeof data === 'object' && Object.keys(data).length > 0) {
+      const moduleTitle = module.charAt(0).toUpperCase() + module.slice(1) + ' Modul / Module';
+      let itemsHtml = '';
+
+      Object.entries(data).forEach(([key, value]) => {
+        // Skip empty values
+        if (value === '' || value === null || value === undefined) {
+          return;
+        }
+
+        const label = formatSummaryLabel(key);
+        const displayValue = formatDisplayValue(value, key);
+
+        itemsHtml += `
+          <div class="summary-item">
+            <span class="summary-label">${label}:</span>
+            <span class="summary-value">${displayValue}</span>
+          </div>
+        `;
+      });
+
+      if (itemsHtml) {
+        summaryHtml += `
+          <div class="summary-module">
+            <h4 class="module-title">${moduleTitle}</h4>
+            <div class="summary-items">
+              ${itemsHtml}
+            </div>
+          </div>
+        `;
+      }
+    }
+  });
+
+  return summaryHtml || '<p class="no-data">Keine Bewertungsdaten verfügbar / No assessment data available</p>';
+}
+
+/**
+ * Render flat input summary
+ * @param {object} formData - Flat form data
+ * @returns {string} HTML for flat summary
+ */
+function renderFlatInputSummary(formData) {
+  let itemsHtml = '';
+
+  Object.entries(formData).forEach(([key, value]) => {
+    // Skip empty values and internal fields
+    if (value === '' || value === null || value === undefined || key.startsWith('_')) {
+      return;
+    }
+
+    const label = formatSummaryLabel(key);
+    const displayValue = formatDisplayValue(value, key);
+
+    itemsHtml += `
+      <div class="summary-item">
+        <span class="summary-label">${label}:</span>
+        <span class="summary-value">${displayValue}</span>
       </div>
-    `,
-    )
-    .join('');
+    `;
+  });
+
+  if (!itemsHtml) {
+    return '<p class="no-data">Keine Bewertungsdaten verfügbar / No assessment data available</p>';
+  }
+
+  return `
+    <div class="summary-module">
+      <div class="summary-items">
+        ${itemsHtml}
+      </div>
+    </div>
+  `;
 }
 
 function renderDrivers(drivers) {
@@ -395,6 +502,200 @@ function renderDrivers(drivers) {
         .join('')
       : '<p class="no-drivers">None</p>'
     }
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Extract GFAP value from form data
+ * @param {object} formData - Form data from case
+ * @returns {number} GFAP value or 0
+ */
+function getGFAPValue(formData) {
+  if (!formData) return 0;
+
+  // Check if modular data (coma, limited, full modules)
+  for (const module of ['coma', 'limited', 'full']) {
+    if (formData[module]?.gfap_value) {
+      return parseFloat(formData[module].gfap_value);
+    }
+    if (formData[module]?.gfap) {
+      return parseFloat(formData[module].gfap);
+    }
+  }
+
+  // Check flat data
+  if (formData.gfap_value) return parseFloat(formData.gfap_value);
+  if (formData.gfap) return parseFloat(formData.gfap);
+
+  return 0;
+}
+
+/**
+ * Estimate ICH volume from GFAP value (simplified from PWA logic)
+ * @param {number} gfapValue - GFAP value in pg/mL
+ * @returns {number} Estimated ICH volume in ml
+ */
+function estimateICHVolume(gfapValue) {
+  if (!gfapValue || gfapValue <= 0) return 0;
+
+  // Simplified logarithmic relationship from PWA
+  // GFAP values typically range from 10-10000+ pg/mL
+  // ICH volumes typically range from <1ml to 100ml+
+  const logGFAP = Math.log10(gfapValue);
+  const estimatedVolume = Math.pow(10, (logGFAP - 1.5) * 1.2);
+
+  return Math.max(0, Math.min(150, estimatedVolume)); // Cap at 150ml
+}
+
+/**
+ * Get volume color based on severity
+ * @param {number} volume - ICH volume in ml
+ * @returns {string} Hex color
+ */
+function getVolumeColor(volume) {
+  if (volume >= 30) return '#ff4444'; // Critical (high mortality)
+  if (volume >= 15) return '#ff8800'; // High risk
+  if (volume >= 5) return '#ffcc00';  // Moderate
+  return '#0066cc'; // Low volume
+}
+
+/**
+ * Render ICH volume ring if GFAP data is available
+ * @param {object} formData - Form data containing GFAP
+ * @returns {string} HTML for volume ring or empty string
+ */
+function renderICHVolumeRing(formData) {
+  const gfapValue = getGFAPValue(formData);
+  if (!gfapValue || gfapValue <= 0) return '';
+
+  const estimatedVolume = estimateICHVolume(gfapValue);
+  const volumeColor = getVolumeColor(estimatedVolume);
+
+  // Calculate progress ring (max 100ml = 100%)
+  const volumePercent = Math.min((estimatedVolume / 100) * 100, 100);
+  const circumference = Math.PI * 100;
+  const offset = circumference * (1 - volumePercent / 100);
+
+  const volumeDisplay = estimatedVolume < 1 ? '<1' : estimatedVolume.toFixed(1);
+
+  return `
+    <div class="circle-item">
+      <div class="probability-circle">
+        <svg viewBox="0 0 120 120" width="120" height="120">
+          <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="8"/>
+          <circle cx="60" cy="60" r="50" fill="none"
+            stroke="${volumeColor}"
+            stroke-width="10"
+            stroke-dasharray="${circumference}"
+            stroke-dashoffset="${offset}"
+            stroke-linecap="round"
+            transform="rotate(-90 60 60)"
+            class="probability-progress volume-ring"/>
+          <text x="60" y="60"
+            text-anchor="middle"
+            font-family="system-ui, -apple-system, sans-serif"
+            font-size="24"
+            font-weight="bold"
+            fill="#ffffff">
+            ${volumeDisplay}
+          </text>
+          <text x="60" y="78"
+            text-anchor="middle"
+            font-family="system-ui, -apple-system, sans-serif"
+            font-size="14"
+            fill="rgba(255,255,255,0.7)">
+            ml
+          </text>
+        </svg>
+      </div>
+      <div class="circle-label">Blutungsvolumen / Bleed Volume</div>
+      <div class="volume-note">Geschätzt von GFAP / Estimated from GFAP</div>
+    </div>
+  `;
+}
+
+/**
+ * Render Entscheidungshilfe speedometer for LVO/ICH decision support
+ * @param {number} ichPercent - ICH probability percentage
+ * @param {number} lvoPercent - LVO probability percentage
+ * @returns {string} HTML for speedometer or empty string
+ */
+function renderEntscheidungshilfe(ichPercent, lvoPercent) {
+  // Only show if both probabilities are significant
+  if (!lvoPercent || lvoPercent < 20 || ichPercent < 20) return '';
+
+  const ratio = lvoPercent / Math.max(ichPercent, 1);
+  const absDiff = Math.abs(lvoPercent - ichPercent);
+
+  // Only show if there's a meaningful signal (difference > 15%)
+  if (absDiff < 15) return '';
+
+  // Calculate needle position (-90 to +90 degrees)
+  // Ratio < 0.8 = ICH dominant, > 1.2 = LVO dominant, between = uncertain
+  let needleAngle = 0;
+  if (ratio < 0.5) needleAngle = -75; // Strong ICH
+  else if (ratio < 0.8) needleAngle = -45; // Moderate ICH
+  else if (ratio < 1.2) needleAngle = 0; // Uncertain
+  else if (ratio < 2.0) needleAngle = 45; // Moderate LVO
+  else needleAngle = 75; // Strong LVO
+
+  const recommendation = ratio < 0.8
+    ? 'ICH wahrscheinlicher / ICH more likely'
+    : ratio > 1.2
+      ? 'LVO wahrscheinlicher / LVO more likely'
+      : 'Unsicher - beide möglich / Uncertain - both possible';
+
+  const confidence = absDiff > 30 ? 'Hoch / High' : absDiff > 20 ? 'Mittel / Medium' : 'Niedrig / Low';
+
+  return `
+    <div class="content-section entscheidungshilfe-section">
+      <h3>🎯 Entscheidungshilfe / Decision Support</h3>
+      <div class="speedometer-card">
+        <div class="speedometer-gauge">
+          <svg viewBox="0 0 200 120" width="300" height="180">
+            <!-- Arc background -->
+            <path d="M 30 100 A 70 70 0 0 1 170 100" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="20" stroke-linecap="round"/>
+
+            <!-- ICH zone (red) -->
+            <path d="M 30 100 A 70 70 0 0 1 80 45" fill="none" stroke="#ff4444" stroke-width="20" stroke-linecap="round" opacity="0.6"/>
+
+            <!-- Uncertain zone (yellow) -->
+            <path d="M 80 45 A 70 70 0 0 1 120 45" fill="none" stroke="#ffcc00" stroke-width="20" stroke-linecap="round" opacity="0.6"/>
+
+            <!-- LVO zone (blue) -->
+            <path d="M 120 45 A 70 70 0 0 1 170 100" fill="none" stroke="#0066cc" stroke-width="20" stroke-linecap="round" opacity="0.6"/>
+
+            <!-- Needle -->
+            <line x1="100" y1="100" x2="100" y2="40"
+                  stroke="#ffffff" stroke-width="3" stroke-linecap="round"
+                  transform="rotate(${needleAngle} 100 100)"/>
+            <circle cx="100" cy="100" r="6" fill="#ffffff"/>
+
+            <!-- Labels -->
+            <text x="40" y="115" font-size="12" fill="#ff4444" font-weight="bold">ICH</text>
+            <text x="150" y="115" font-size="12" fill="#0066cc" font-weight="bold">LVO</text>
+          </svg>
+        </div>
+
+        <div class="speedometer-info">
+          <div class="recommendation">${recommendation}</div>
+          <div class="speedometer-metrics">
+            <div class="metric">
+              <span class="metric-label">LVO/ICH Verhältnis / Ratio:</span>
+              <span class="metric-value">${ratio.toFixed(2)}</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Differenz / Difference:</span>
+              <span class="metric-value">${absDiff.toFixed(0)}%</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Konfidenz / Confidence:</span>
+              <span class="metric-value">${confidence}</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   `;
