@@ -2,7 +2,7 @@
  * Dashboard UI - Case List View
  */
 import { URGENCY_CONFIG, KIOSK_CONFIG } from '../config.js';
-import { getRiskColor, getTimeAgo, formatETA, isCaseStale } from '../utils.js';
+import { getRiskColor, getTimeAgo, formatETA, isCaseStale, getRelevantTimestamp } from '../utils.js';
 
 export function renderDashboard(cases) {
   const container = document.getElementById('casesContainer');
@@ -78,11 +78,14 @@ function renderCaseCard(caseData) {
   // Check GPS staleness
   const isGpsStale = caseData.tracking?.gpsStale || false;
 
-  // Check if case is old/stale
-  const caseIsStale = isCaseStale(caseData.createdAt);
+  // Get most relevant timestamp (updatedAt > receivedAt > lastUpdated > createdAt)
+  const relevantTimestamp = getRelevantTimestamp(caseData);
 
-  // Calculate time since received
-  const receivedAgo = getTimeAgo(caseData.createdAt);
+  // Check if case is old/stale
+  const caseIsStale = isCaseStale(relevantTimestamp);
+
+  // Calculate time since received/updated
+  const receivedAgo = getTimeAgo(relevantTimestamp);
 
   // Create accessible label
   const ariaLabel = `${caseData.urgency} case, ${caseData.ambulanceId}, ICH risk ${ichPercent}%, ETA ${formattedETA} minutes`;
