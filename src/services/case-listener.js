@@ -188,9 +188,15 @@ export class CaseListener {
         receivedAt: isNew ? new Date() : this.cases.get(caseId).receivedAt,
       });
 
-      // Log new cases
+      // Log new cases with timestamp info
       if (isNew) {
         console.log('[CaseListener] New case:', caseId, this.getCaseSummary(caseData));
+        console.log('[CaseListener] Timestamps:', {
+          createdAt: caseData.createdAt,
+          updatedAt: caseData.updatedAt,
+          receivedAt: caseData.receivedAt,
+          trackingLastUpdated: caseData.tracking?.lastUpdated,
+        });
       }
     });
 

@@ -72,13 +72,42 @@ export function formatTime(isoString) {
 }
 
 /**
+ * Get the most relevant timestamp for display
+ * Priority: updatedAt > receivedAt > tracking.lastUpdated > createdAt
+ * @param {object} caseData - Case data object
+ * @returns {string|Date} Timestamp (ISO string or Date object)
+ */
+export function getRelevantTimestamp(caseData) {
+  // Priority 1: updatedAt (when case was last modified/submitted)
+  if (caseData.updatedAt) {
+    return caseData.updatedAt;
+  }
+
+  // Priority 2: receivedAt (when kiosk first saw this case - most reliable)
+  // This is our local timestamp and most accurate for "when did we see this"
+  if (caseData.receivedAt) {
+    return caseData.receivedAt;
+  }
+
+  // Priority 3: tracking.lastUpdated (recent GPS update)
+  if (caseData.tracking?.lastUpdated) {
+    return caseData.tracking.lastUpdated;
+  }
+
+  // Priority 4: createdAt (fallback - may be hours old if form was started earlier)
+  return caseData.createdAt || new Date();
+}
+
+/**
  * Get time ago string with negative time protection
- * @param {string} timestamp - ISO date string
+ * @param {string|Date} timestamp - ISO date string or Date object
  * @returns {string} Time ago description
  */
 export function getTimeAgo(timestamp) {
   const now = new Date();
-  const then = new Date(timestamp);
+
+  // Handle both Date objects and ISO strings
+  const then = timestamp instanceof Date ? timestamp : new Date(timestamp);
 
   // Protect against invalid dates or future dates
   if (isNaN(then.getTime())) {
@@ -163,17 +192,18 @@ export function isGPSStale(lastUpdated, thresholdMinutes = 5) {
 
 /**
  * Check if case is stale (old)
- * @param {string} createdAt - ISO date string when case was created
+ * @param {string|Date} timestamp - ISO date string or Date object
  * @param {number} thresholdMinutes - Staleness threshold in minutes
  * @returns {boolean} True if case is stale
  */
-export function isCaseStale(createdAt, thresholdMinutes = CONSTANTS.CASE_STALE_THRESHOLD_MINUTES) {
-  if (!createdAt) {
+export function isCaseStale(timestamp, thresholdMinutes = CONSTANTS.CASE_STALE_THRESHOLD_MINUTES) {
+  if (!timestamp) {
     return false;
   }
 
   try {
-    const created = new Date(createdAt);
+    // Handle both Date objects and ISO strings
+    const created = timestamp instanceof Date ? timestamp : new Date(timestamp);
     if (isNaN(created.getTime())) {
       return false;
     }
