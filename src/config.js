@@ -49,7 +49,7 @@ export const AVAILABLE_HOSPITALS = [
   { id: 'BY-NS-003', name: 'Helios Klinikum München West' },
   { id: 'BY-NS-004', name: 'Klinikum Bogenhausen' },
   { id: 'BW-NS-001', name: 'Universitätsklinikum Tübingen' },
-  { id: 'BW-NS-002', name: 'Klinikum Stuttgart' },
+  { id: 'BW-NS-005', name: 'Klinikum Stuttgart - Katharinenhospital' },
   { id: 'BW-NS-003', name: 'Universitätsklinikum Freiburg' },
   { id: 'ALL', name: '🌐 All Hospitals (Show All Cases)' },
 ];
