@@ -7,10 +7,13 @@ import { KIOSK_CONFIG } from './config.js';
 import { caseListener } from './services/case-listener.js';
 import { renderDashboard } from './ui/dashboard.js';
 import { showCaseDetail } from './ui/case-detail.js';
+import { CONSTANTS } from './utils.js';
 
 // Application state
 let currentCases = [];
 let audioContext = null;
+let clockIntervalId = null;
+let isFirstLoad = true;
 
 /**
  * Initialize kiosk application
@@ -26,7 +29,7 @@ async function initializeKiosk() {
 
   // Start clock
   updateClock();
-  setInterval(updateClock, 1000);
+  clockIntervalId = setInterval(updateClock, 1000);
 
   // Initialize audio if enabled
   if (KIOSK_CONFIG.playAudioAlert) {
@@ -42,7 +45,33 @@ async function initializeKiosk() {
   // Add event listeners
   attachEventListeners();
 
+  // Add cleanup on page unload
+  window.addEventListener('beforeunload', cleanup);
+
   console.log('[Kiosk] Initialized successfully');
+}
+
+/**
+ * Cleanup resources before page unload
+ */
+function cleanup() {
+  console.log('[Kiosk] Cleaning up resources...');
+
+  // Stop polling
+  caseListener.stop();
+
+  // Clear clock interval
+  if (clockIntervalId) {
+    clearInterval(clockIntervalId);
+    clockIntervalId = null;
+  }
+
+  // Close audio context
+  if (audioContext && audioContext.state !== 'closed') {
+    audioContext.close().catch((err) => {
+      console.warn('[Kiosk] Error closing audio context:', err);
+    });
+  }
 }
 
 /**
@@ -61,9 +90,9 @@ function handleCaseUpdate(data) {
   renderDashboard(currentCases);
   updateHeader(data);
 
-  // Check for new cases
+  // Check for new cases (skip alert on first load)
   const newCases = currentCases.filter((c) => c.isNew);
-  if (newCases.length > 0 && previousCount > 0) {
+  if (newCases.length > 0 && !isFirstLoad) {
     // Show alert for new cases
     playNewCaseAlert();
     flashScreen();
@@ -71,7 +100,12 @@ function handleCaseUpdate(data) {
     // Mark as viewed after showing alert
     setTimeout(() => {
       newCases.forEach((c) => caseListener.markViewed(c.id));
-    }, 2000);
+    }, CONSTANTS.NEW_CASE_VIEWED_DELAY_MS);
+  }
+
+  // Mark first load complete
+  if (isFirstLoad) {
+    isFirstLoad = false;
   }
 
   // Update connection status
@@ -196,6 +230,7 @@ function updateConnectionStatus(connected) {
   if (status) {
     status.className = `status-indicator ${connected ? 'connected' : 'disconnected'}`;
     status.title = connected ? 'Connected' : 'Disconnected';
+    status.setAttribute('aria-label', `Connection status: ${connected ? 'connected' : 'disconnected'}`);
   }
 }
 
@@ -232,14 +267,20 @@ function initializeAudio() {
 }
 
 /**
- * Play new case alert
+ * Play new case alert with audio context resume
  */
-function playNewCaseAlert() {
+async function playNewCaseAlert() {
   if (!KIOSK_CONFIG.playAudioAlert || !audioContext) {
     return;
   }
 
   try {
+    // Resume audio context if suspended (browser throttling)
+    if (audioContext.state === 'suspended') {
+      await audioContext.resume();
+      console.log('[Kiosk] Audio context resumed');
+    }
+
     // Generate alert beep
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
@@ -247,14 +288,17 @@ function playNewCaseAlert() {
     oscillator.connect(gainNode);
     gainNode.connect(audioContext.destination);
 
-    oscillator.frequency.value = 880; // A5 note
+    oscillator.frequency.value = CONSTANTS.ALERT_BEEP_FREQUENCY_HZ;
     oscillator.type = 'sine';
 
-    gainNode.gain.setValueAtTime(KIOSK_CONFIG.audioAlertVolume, audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+    gainNode.gain.setValueAtTime(CONSTANTS.ALERT_BEEP_VOLUME, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(
+      0.01,
+      audioContext.currentTime + CONSTANTS.ALERT_BEEP_DURATION_SEC
+    );
 
     oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + 0.5);
+    oscillator.stop(audioContext.currentTime + CONSTANTS.ALERT_BEEP_DURATION_SEC);
 
     console.log('[Kiosk] Alert sound played');
   } catch (error) {
@@ -306,10 +350,28 @@ function attachEventListeners() {
     }
   });
 
-  // ESC key to close modal
+  // Keyboard navigation
   document.addEventListener('keydown', (e) => {
+    // ESC key to close modal
     if (e.key === 'Escape') {
       closeModal();
+      return;
+    }
+
+    // Enter or Space on case card to open details
+    if (e.key === 'Enter' || e.key === ' ') {
+      const caseCard = e.target.closest('.case-card');
+      if (caseCard) {
+        e.preventDefault(); // Prevent scroll on Space
+        const caseId = caseCard.dataset.caseId;
+        if (caseId) {
+          const caseData = caseListener.getCase(caseId);
+          if (caseData) {
+            showCaseDetail(caseData);
+            caseListener.markViewed(caseId);
+          }
+        }
+      }
     }
   });
 
