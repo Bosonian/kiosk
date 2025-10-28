@@ -3,18 +3,26 @@
  * Polls Cloud Function for active cases
  */
 import { KIOSK_CONFIG } from '../config.js';
+import {
+  createTimeoutSignal,
+  sleep,
+  validateCaseData,
+  isGPSStale,
+  CONSTANTS,
+} from '../utils.js';
 
 export class CaseListener {
   constructor() {
     this.baseUrl = KIOSK_CONFIG.caseSharingUrl;
     this.pollInterval = KIOSK_CONFIG.pollInterval;
-    this.hospitalId = KIOSK_CONFIG.hospitalId;
+    // Don't cache hospitalId - always read from KIOSK_CONFIG for real-time updates
     this.intervalId = null;
     this.cases = new Map();
     this.onUpdate = null;
     this.onError = null;
     this.lastFetchTime = null;
     this.isConnected = false;
+    this.retryCount = 0;
   }
 
   /**
@@ -49,52 +57,71 @@ export class CaseListener {
   }
 
   /**
-   * Fetch cases from API
+   * Fetch cases from API with retry logic
    */
   async fetchCases() {
-    try {
-      const url = this.buildFetchUrl();
+    let lastError = null;
 
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-        },
-        signal: AbortSignal.timeout(8000), // 8 second timeout
-      });
+    for (let attempt = 0; attempt <= CONSTANTS.MAX_RETRY_ATTEMPTS; attempt++) {
+      try {
+        const url = this.buildFetchUrl();
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to fetch cases');
-      }
-
-      // Update connection status
-      this.isConnected = true;
-      this.lastFetchTime = new Date();
-
-      // Process cases
-      this.processCases(data.cases || []);
-
-      // Notify listeners
-      if (this.onUpdate) {
-        this.onUpdate({
-          cases: Array.from(this.cases.values()),
-          timestamp: data.timestamp,
-          count: data.count,
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          },
+          signal: createTimeoutSignal(CONSTANTS.FETCH_TIMEOUT_MS),
         });
-      }
-    } catch (error) {
-      console.error('[CaseListener] Fetch error:', error);
-      this.isConnected = false;
 
-      if (this.onError) {
-        this.onError(error);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to fetch cases');
+        }
+
+        // Success! Reset retry count and update connection status
+        this.retryCount = 0;
+        this.isConnected = true;
+        this.lastFetchTime = new Date();
+
+        // Process cases
+        this.processCases(data.cases || []);
+
+        // Notify listeners
+        if (this.onUpdate) {
+          this.onUpdate({
+            cases: Array.from(this.cases.values()),
+            timestamp: data.timestamp,
+            count: data.count,
+          });
+        }
+
+        return; // Success, exit function
+      } catch (error) {
+        lastError = error;
+        console.error(`[CaseListener] Fetch error (attempt ${attempt + 1}/${CONSTANTS.MAX_RETRY_ATTEMPTS + 1}):`, error);
+
+        // If not the last attempt, wait before retrying
+        if (attempt < CONSTANTS.MAX_RETRY_ATTEMPTS) {
+          const delayMs = CONSTANTS.RETRY_DELAYS_MS[attempt] || 8000;
+          console.log(`[CaseListener] Retrying in ${delayMs}ms...`);
+          await sleep(delayMs);
+        }
       }
+    }
+
+    // All retries failed
+    console.error('[CaseListener] All retry attempts failed:', lastError);
+    this.isConnected = false;
+    this.retryCount++;
+
+    if (this.onError) {
+      this.onError(lastError);
     }
   }
 
@@ -106,8 +133,9 @@ export class CaseListener {
 
     const params = new URLSearchParams();
 
-    if (this.hospitalId) {
-      params.append('hospitalId', this.hospitalId);
+    // Always read from config for latest hospital selection
+    if (KIOSK_CONFIG.hospitalId) {
+      params.append('hospitalId', KIOSK_CONFIG.hospitalId);
     }
 
     params.append('status', 'in_transit');
@@ -121,7 +149,7 @@ export class CaseListener {
   }
 
   /**
-   * Process fetched cases
+   * Process fetched cases with validation and enrichment
    */
   processCases(newCases) {
     const oldCaseIds = new Set(this.cases.keys());
@@ -129,14 +157,33 @@ export class CaseListener {
 
     // Process each case
     newCases.forEach((caseData) => {
+      // Validate case data
+      if (!validateCaseData(caseData)) {
+        console.warn('[CaseListener] Invalid case data, skipping:', caseData);
+        return;
+      }
+
       const caseId = caseData.id;
       newCaseIds.add(caseId);
 
       const isNew = !this.cases.has(caseId);
 
-      // Store case
+      // Calculate GPS staleness
+      const gpsStale = isGPSStale(
+        caseData.tracking?.lastUpdated,
+        KIOSK_CONFIG.staleGpsMinutes
+      );
+
+      // Enrich tracking data
+      const enrichedTracking = {
+        ...(caseData.tracking || {}),
+        gpsStale,
+      };
+
+      // Store case with enriched data
       this.cases.set(caseId, {
         ...caseData,
+        tracking: enrichedTracking,
         isNew, // Flag for new case alert
         receivedAt: isNew ? new Date() : this.cases.get(caseId).receivedAt,
       });

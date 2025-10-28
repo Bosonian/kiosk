@@ -2,6 +2,7 @@
  * Case Detail Modal
  * Shows full assessment results for a case
  */
+import { getRiskColor, getRiskLevel, formatTime, formatLabel } from '../utils.js';
 
 export function showCaseDetail(caseData) {
   const modal = document.getElementById('caseDetailModal');
@@ -30,7 +31,7 @@ function renderDetailView(caseData) {
     <div class="case-detail-container">
       <div class="detail-header">
         <div class="header-left">
-          <h2>Case Details</h2>
+          <h2 id="modalTitle">Case Details</h2>
           <div class="case-badges">
             <span class="badge urgency-badge">${urgency}</span>
             <span class="badge module-badge">${moduleType}</span>
@@ -104,43 +105,6 @@ function renderDetailView(caseData) {
   `;
 }
 
-function getRiskColor(percent) {
-  if (percent > 70) {
-    return '#ff4444';
-  }
-  if (percent > 50) {
-    return '#ff8800';
-  }
-  if (percent > 30) {
-    return '#ffcc00';
-  }
-  return '#4a90e2';
-}
-
-function getRiskLevel(percent) {
-  if (percent > 70) {
-    return 'Very High Risk';
-  }
-  if (percent > 50) {
-    return 'High Risk';
-  }
-  if (percent > 30) {
-    return 'Moderate Risk';
-  }
-  return 'Low Risk';
-}
-
-function formatTime(isoString) {
-  try {
-    const date = new Date(isoString);
-    return date.toLocaleTimeString('de-DE', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  } catch {
-    return 'Invalid time';
-  }
-}
 
 function renderFormData(formData) {
   if (!formData || Object.keys(formData).length === 0) {
@@ -158,12 +122,6 @@ function renderFormData(formData) {
     `,
     )
     .join('');
-}
-
-function formatLabel(key) {
-  return key
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, (l) => l.toUpperCase());
 }
 
 function renderDrivers(drivers) {

@@ -1,7 +1,8 @@
 /**
  * Dashboard UI - Case List View
  */
-import { URGENCY_CONFIG } from '../config.js';
+import { URGENCY_CONFIG, KIOSK_CONFIG } from '../config.js';
+import { getRiskColor, getTimeAgo, formatETA, isCaseStale } from '../utils.js';
 
 export function renderDashboard(cases) {
   const container = document.getElementById('casesContainer');
@@ -24,11 +25,22 @@ export function renderDashboard(cases) {
   // Sort by urgency and ETA
   const sortedCases = sortCases(cases);
 
+  // Apply display limit
+  const displayCases = sortedCases.slice(0, KIOSK_CONFIG.maxCasesDisplay);
+
   // Render case cards
-  const cardsHTML = sortedCases.map((caseData) => renderCaseCard(caseData)).join('');
+  const cardsHTML = displayCases.map((caseData) => renderCaseCard(caseData)).join('');
+
+  // Show warning if cases were truncated
+  const truncatedWarning = sortedCases.length > KIOSK_CONFIG.maxCasesDisplay
+    ? `<div class="truncated-warning" role="alert">
+         Showing ${KIOSK_CONFIG.maxCasesDisplay} of ${sortedCases.length} cases
+       </div>`
+    : '';
 
   container.innerHTML = `
-    <div class="cases-grid">
+    ${truncatedWarning}
+    <div class="cases-grid" role="list" aria-label="Active cases">
       ${cardsHTML}
     </div>
   `;
@@ -60,19 +72,28 @@ function renderCaseCard(caseData) {
   const urgencyConfig = URGENCY_CONFIG[caseData.urgency] || URGENCY_CONFIG.STANDARD;
   const ichPercent = Math.round((caseData.results?.ich?.probability || 0) * 100);
   const lvoPercent = caseData.results?.lvo ? Math.round(caseData.results.lvo.probability * 100) : null;
-  const eta = caseData.tracking?.duration || '?';
+  const formattedETA = formatETA(caseData.tracking?.duration);
   const distance = caseData.tracking?.distance || '?';
 
   // Check GPS staleness
   const isGpsStale = caseData.tracking?.gpsStale || false;
 
+  // Check if case is old/stale
+  const caseIsStale = isCaseStale(caseData.createdAt);
+
   // Calculate time since received
   const receivedAgo = getTimeAgo(caseData.createdAt);
 
+  // Create accessible label
+  const ariaLabel = `${caseData.urgency} case, ${caseData.ambulanceId}, ICH risk ${ichPercent}%, ETA ${formattedETA} minutes`;
+
   return `
-    <div class="case-card ${caseData.urgency.toLowerCase()} ${caseData.isNew ? 'new-case' : ''}"
+    <div class="case-card ${caseData.urgency.toLowerCase()} ${caseData.isNew ? 'new-case' : ''} ${caseIsStale ? 'stale-case' : ''}"
          data-case-id="${caseData.id}"
-         style="border-color: ${urgencyConfig.color}">
+         style="border-color: ${urgencyConfig.color}"
+         role="listitem"
+         tabindex="0"
+         aria-label="${ariaLabel}">
 
       <div class="case-header">
         <div class="urgency-badge" style="background: ${urgencyConfig.color}">
@@ -106,12 +127,12 @@ function renderCaseCard(caseData) {
 
       <div class="case-eta">
         <div class="eta-main ${isGpsStale ? 'stale' : ''}">
-          <span class="eta-value">${eta}</span>
-          <span class="eta-unit">min</span>
+          <span class="eta-value">${formattedETA}</span>
+          <span class="eta-unit">${formattedETA === 'Arrived' || formattedETA === '?' ? '' : 'min'}</span>
         </div>
         <div class="eta-details">
           <span class="distance">${typeof distance === 'number' ? distance.toFixed(1) : distance} km</span>
-          ${isGpsStale ? '<span class="gps-stale-warning">⚠️ GPS stale</span>' : ''}
+          ${isGpsStale ? '<span class="gps-stale-warning" role="alert">⚠️ GPS stale</span>' : ''}
         </div>
       </div>
 
@@ -123,37 +144,3 @@ function renderCaseCard(caseData) {
   `;
 }
 
-/**
- * Get risk color based on percentage
- */
-function getRiskColor(percent) {
-  if (percent > 70) {
-    return '#ff4444';
-  }
-  if (percent > 50) {
-    return '#ff8800';
-  }
-  if (percent > 30) {
-    return '#ffcc00';
-  }
-  return '#4a90e2';
-}
-
-/**
- * Get time ago string
- */
-function getTimeAgo(timestamp) {
-  const now = new Date();
-  const then = new Date(timestamp);
-  const seconds = Math.floor((now - then) / 1000);
-
-  if (seconds < 60) {
-    return `${seconds}s ago`;
-  }
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) {
-    return `${minutes}m ago`;
-  }
-  const hours = Math.floor(minutes / 60);
-  return `${hours}h ${minutes % 60}m ago`;
-}

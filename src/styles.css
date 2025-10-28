@@ -549,6 +549,8 @@ body {
 .data-value {
   font-size: var(--font-size-base);
   font-weight: 600;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .drivers-container {
@@ -593,6 +595,29 @@ body {
   border-top: 2px solid var(--border-color);
   display: flex;
   justify-content: flex-end;
+}
+
+/* Stale Case Styling */
+.case-card.stale-case {
+  opacity: 0.7;
+  border-left-width: 3px;
+}
+
+.case-card.stale-case .case-header {
+  opacity: 0.8;
+}
+
+/* Truncated Warning */
+.truncated-warning {
+  background: rgba(255, 136, 0, 0.15);
+  border: 2px solid var(--color-high);
+  border-radius: 8px;
+  padding: var(--space-md);
+  margin-bottom: var(--space-lg);
+  text-align: center;
+  font-weight: 600;
+  color: var(--color-high);
+  font-size: var(--font-size-base);
 }
 
 /* Footer */
