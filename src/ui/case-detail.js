@@ -43,6 +43,68 @@ function generatePatientCode(caseId) {
   return `PAT-${code}`;
 }
 
+/**
+ * Check if a value is a valid user input (not default/placeholder)
+ * CRITICAL: Only show values that were actually input by the user
+ * @param {any} value - The value to check
+ * @returns {boolean} - True if value should be displayed
+ */
+function isValidInputValue(value) {
+  // Always skip null, undefined, empty string
+  if (value === null || value === undefined || value === '') {
+    return false;
+  }
+
+  // Skip false (default checkbox state)
+  if (value === false) {
+    return false;
+  }
+
+  // Skip 0 or "0" (might be default number)
+  if (value === 0 || value === '0') {
+    return false;
+  }
+
+  // Skip negative/default string patterns (case insensitive)
+  if (typeof value === 'string') {
+    const lowerValue = value.toLowerCase().trim();
+
+    // Check for explicit "No" patterns
+    const defaultPatterns = [
+      'no',
+      'nein',
+      'none',
+      'keine',
+      'unknown',
+      'unbekannt',
+      'n/a',
+      'not applicable'
+    ];
+
+    if (defaultPatterns.includes(lowerValue)) {
+      return false;
+    }
+
+    // Check for "× Nein / No" or "X No" patterns with symbols
+    if (lowerValue.match(/^[×x✗✘]\s*(nein|no)/i)) {
+      return false;
+    }
+
+    // Check for "No" suffix patterns like "Nein / No"
+    if (lowerValue.match(/\/(no|nein)$/i)) {
+      return false;
+    }
+  }
+
+  // Skip empty arrays
+  if (Array.isArray(value) && value.length === 0) {
+    return false;
+  }
+
+  // All other values are considered valid input
+  return true;
+}
+
 export function showCaseDetail(caseData) {
   const modal = document.getElementById('caseDetailModal');
   if (!modal) {
@@ -480,8 +542,8 @@ function renderModularInputSummary(formData) {
       let itemsHtml = '';
 
       Object.entries(data).forEach(([key, value]) => {
-        // Skip empty values
-        if (value === '' || value === null || value === undefined) {
+        // Skip empty, null, undefined, or default values
+        if (!isValidInputValue(value)) {
           return;
         }
 
@@ -524,8 +586,8 @@ function renderFlatInputSummary(formData) {
   let itemsHtml = '';
 
   Object.entries(formData).forEach(([key, value]) => {
-    // Skip empty values and internal fields
-    if (value === '' || value === null || value === undefined || key.startsWith('_')) {
+    // Skip empty values, internal fields, and default values
+    if (key.startsWith('_') || !isValidInputValue(value)) {
       return;
     }
 
