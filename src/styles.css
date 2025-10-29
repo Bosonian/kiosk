@@ -1030,6 +1030,40 @@ body.flash-success {
   font-size: var(--font-size-sm);
 }
 
+.volume-display-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.volume-circle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+  width: 120px;
+  height: 120px;
+}
+
+.volume-number {
+  position: absolute;
+  font-size: 2rem;
+  font-weight: 700;
+  text-align: center;
+  color: var(--text-primary);
+  z-index: 10;
+  pointer-events: none;
+}
+
+.volume-canvas {
+  width: 120px;
+  height: 120px;
+  background: transparent;
+  border-radius: 50%;
+}
+
 .volume-info {
   margin-top: var(--space-md);
   padding: var(--space-md);

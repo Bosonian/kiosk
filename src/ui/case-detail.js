@@ -12,6 +12,7 @@ import {
   formatSummaryLabel,
   formatDisplayValue
 } from '../utils.js';
+import { renderCircularBrainDisplay, initializeVolumeAnimations } from './components/brain-visualization.js';
 
 /**
  * Get risk level classification for styling
@@ -58,6 +59,11 @@ export function showCaseDetail(caseData) {
 
   // Show modal
   modal.style.display = 'flex';
+
+  // Initialize volume animations after DOM update
+  setTimeout(() => {
+    initializeVolumeAnimations();
+  }, 50);
 }
 
 function renderDetailView(caseData) {
@@ -226,7 +232,7 @@ function renderEnhancedRiskCard(type, percent, level, results) {
 }
 
 /**
- * Render volume card as separate card (PWA style)
+ * Render volume card as separate card (PWA style with animated canvas)
  * @param {object} formData - Form data containing GFAP
  * @returns {string} HTML for volume card
  */
@@ -237,15 +243,7 @@ function renderVolumeCard(formData) {
   }
 
   const estimatedVolume = estimateICHVolume(gfapValue);
-  const volumeColor = getVolumeColor(estimatedVolume);
   const mortality = estimateMortalityFromVolume(estimatedVolume);
-
-  // Calculate progress ring (max 100ml = 100%)
-  const volumePercent = Math.min((estimatedVolume / 100) * 100, 100);
-  const circumference = Math.PI * 100;
-  const offset = circumference * (1 - volumePercent / 100);
-
-  const volumeDisplay = estimatedVolume < 1 ? '<1' : estimatedVolume.toFixed(1);
 
   return `
     <div class="content-section">
@@ -254,33 +252,8 @@ function renderVolumeCard(formData) {
         <div class="risk-probability">
           <div class="circles-container">
             <div class="circle-item">
-              <div class="probability-circle">
-                <svg viewBox="0 0 120 120" width="120" height="120">
-                  <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="8"/>
-                  <circle cx="60" cy="60" r="50" fill="none"
-                    stroke="${volumeColor}"
-                    stroke-width="10"
-                    stroke-dasharray="${circumference}"
-                    stroke-dashoffset="${offset}"
-                    stroke-linecap="round"
-                    transform="rotate(-90 60 60)"
-                    class="probability-progress volume-ring"/>
-                  <text x="60" y="60"
-                    text-anchor="middle"
-                    font-family="system-ui, -apple-system, sans-serif"
-                    font-size="24"
-                    font-weight="bold"
-                    fill="#ffffff">
-                    ${volumeDisplay}
-                  </text>
-                  <text x="60" y="78"
-                    text-anchor="middle"
-                    font-family="system-ui, -apple-system, sans-serif"
-                    font-size="14"
-                    fill="rgba(255,255,255,0.7)">
-                    mL
-                  </text>
-                </svg>
+              <div class="volume-display-container">
+                ${renderCircularBrainDisplay(estimatedVolume)}
               </div>
               <div class="circle-label">Blutungsvolumen / Bleed Volume</div>
             </div>
