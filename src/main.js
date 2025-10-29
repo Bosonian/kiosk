@@ -382,6 +382,17 @@ function attachEventListeners() {
       caseListener.fetchCases();
     }
   });
+
+  // Listen for custom dismissCase event from case detail modal
+  window.addEventListener('dismissCase', (e) => {
+    const caseId = e.detail?.caseId;
+    if (caseId) {
+      console.log('[Kiosk] Received dismissCase event for:', caseId);
+      handleDismissCase(caseId);
+    } else {
+      console.error('[Kiosk] dismissCase event missing caseId');
+    }
+  });
 }
 
 /**

@@ -108,16 +108,27 @@ function isValidInputValue(value) {
 export function showCaseDetail(caseData) {
   const modal = document.getElementById('caseDetailModal');
   if (!modal) {
+    console.error('[CaseDetail] Modal element not found');
     return;
   }
 
   const modalContent = modal.querySelector('.modal-content');
   if (!modalContent) {
+    console.error('[CaseDetail] Modal content element not found');
     return;
   }
 
-  // Render detail view
-  modalContent.innerHTML = renderDetailView(caseData);
+  // CRITICAL: Deep clone caseData to prevent data mixing between cases
+  const safeCaseData = JSON.parse(JSON.stringify(caseData));
+
+  console.log('[CaseDetail] Showing case:', {
+    id: safeCaseData.id,
+    moduleType: safeCaseData.moduleType,
+    formDataKeys: Object.keys(safeCaseData.formData || {})
+  });
+
+  // Render detail view with isolated data
+  modalContent.innerHTML = renderDetailView(safeCaseData);
 
   // Show modal
   modal.style.display = 'flex';
@@ -126,6 +137,38 @@ export function showCaseDetail(caseData) {
   setTimeout(() => {
     initializeVolumeAnimations();
   }, 50);
+
+  // Attach dismiss button handler after rendering
+  setTimeout(() => {
+    attachDismissHandler(safeCaseData.id);
+  }, 100);
+}
+
+/**
+ * Attach dismiss button handler to the rendered button
+ * @param {string} caseId - Case ID
+ */
+function attachDismissHandler(caseId) {
+  const dismissButton = document.querySelector('.dismiss-case-button');
+  if (dismissButton) {
+    // Remove any existing listeners
+    const newButton = dismissButton.cloneNode(true);
+    dismissButton.parentNode.replaceChild(newButton, dismissButton);
+
+    // Add fresh click listener
+    newButton.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('[CaseDetail] Dismiss button clicked for case:', caseId);
+
+      // Dispatch custom event that main.js will handle
+      window.dispatchEvent(new CustomEvent('dismissCase', { detail: { caseId } }));
+    });
+
+    console.log('[CaseDetail] Dismiss button handler attached for case:', caseId);
+  } else {
+    console.warn('[CaseDetail] Dismiss button not found in DOM');
+  }
 }
 
 function renderDetailView(caseData) {
