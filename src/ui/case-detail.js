@@ -463,9 +463,20 @@ function renderFormData(formData) {
 function renderModularInputSummary(formData) {
   let summaryHtml = '';
 
+  // Module icons and titles
+  const moduleConfig = {
+    coma: { icon: '🚨', title: 'Coma Modul / Module' },
+    limited: { icon: '⚡', title: 'Limited Modul / Module' },
+    full: { icon: '📊', title: 'Full Modul / Module' }
+  };
+
   Object.entries(formData).forEach(([module, data]) => {
     if (data && typeof data === 'object' && Object.keys(data).length > 0) {
-      const moduleTitle = module.charAt(0).toUpperCase() + module.slice(1) + ' Modul / Module';
+      const config = moduleConfig[module] || {
+        icon: '📋',
+        title: module.charAt(0).toUpperCase() + module.slice(1) + ' Modul / Module'
+      };
+
       let itemsHtml = '';
 
       Object.entries(data).forEach(([key, value]) => {
@@ -479,7 +490,7 @@ function renderModularInputSummary(formData) {
 
         itemsHtml += `
           <div class="summary-item">
-            <span class="summary-label">${label}:</span>
+            <span class="summary-label">${label}</span>
             <span class="summary-value">${displayValue}</span>
           </div>
         `;
@@ -488,7 +499,10 @@ function renderModularInputSummary(formData) {
       if (itemsHtml) {
         summaryHtml += `
           <div class="summary-module">
-            <h4 class="module-title">${moduleTitle}</h4>
+            <h4 class="module-title">
+              <span class="module-icon">${config.icon}</span>
+              ${config.title}
+            </h4>
             <div class="summary-items">
               ${itemsHtml}
             </div>
