@@ -1030,6 +1030,35 @@ body.flash-success {
   font-size: var(--font-size-sm);
 }
 
+.volume-info {
+  margin-top: var(--space-md);
+  padding: var(--space-md);
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+}
+
+[data-theme="light"] .volume-info {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.mortality-estimate {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.mortality-label {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.mortality-value {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--color-critical);
+}
+
 /* Differential Diagnoses */
 .differential-diagnoses {
   background: var(--bg-card);

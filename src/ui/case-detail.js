@@ -99,10 +99,13 @@ function renderDetailView(caseData) {
         <div class="content-section">
           <h3>🎯 Risikobewertung / Risk Assessment</h3>
           <div class="${layoutClass}">
-            ${renderEnhancedRiskCard('ich', ichPercent, ichLevel, results, formData)}
-            ${lvoPercent !== null ? renderEnhancedRiskCard('lvo', lvoPercent, lvoLevel, results, formData) : ''}
+            ${renderEnhancedRiskCard('ich', ichPercent, ichLevel, results)}
+            ${lvoPercent !== null ? renderEnhancedRiskCard('lvo', lvoPercent, lvoLevel, results) : ''}
           </div>
         </div>
+
+        <!-- ICH Volume Card (separate, like PWA) -->
+        ${ichPercent >= 50 ? renderVolumeCard(formData) : ''}
 
         <!-- Entscheidungshilfe Speedometer (shown if meaningful signal) -->
         ${renderEntscheidungshilfe(ichPercent, lvoPercent)}
@@ -163,10 +166,9 @@ function renderDetailView(caseData) {
  * @param {number} percent - Risk percentage (0-100)
  * @param {string} level - Risk level ('critical', 'high', 'normal')
  * @param {object} results - Full results object
- * @param {object} formData - Form data (for GFAP volume calculation)
  * @returns {string} HTML for enhanced risk card
  */
-function renderEnhancedRiskCard(type, percent, level, results, formData = null) {
+function renderEnhancedRiskCard(type, percent, level, results) {
   const icons = { ich: '🩸', lvo: '🧠' };
   const titles = {
     ich: 'ICH Risiko / ICH Risk',
@@ -180,9 +182,6 @@ function renderEnhancedRiskCard(type, percent, level, results, formData = null) 
   const circumference = Math.PI * 100; // For radius 50
   const offset = circumference * (1 - percent / 100);
 
-  // For ICH cards, try to add volume ring if GFAP data available
-  const volumeRingHtml = type === 'ich' && formData ? renderICHVolumeRing(formData) : '';
-
   return `
     <div class="enhanced-risk-card ${type} ${level}">
       <div class="risk-header">
@@ -195,38 +194,121 @@ function renderEnhancedRiskCard(type, percent, level, results, formData = null) 
 
       <div class="risk-probability">
         <div class="circles-container">
-          <div class="rings-row">
-            <div class="circle-item">
-              <div class="probability-circle">
-                <svg viewBox="0 0 120 120" width="120" height="120">
-                  <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="8"/>
-                  <circle cx="60" cy="60" r="50" fill="none"
-                    stroke="${color}"
-                    stroke-width="10"
-                    stroke-dasharray="${circumference}"
-                    stroke-dashoffset="${offset}"
-                    stroke-linecap="round"
-                    transform="rotate(-90 60 60)"
-                    class="probability-progress"/>
-                  <text x="60" y="70"
-                    text-anchor="middle"
-                    font-family="system-ui, -apple-system, sans-serif"
-                    font-size="32"
-                    font-weight="bold"
-                    fill="#ffffff">
-                    ${percent}%
-                  </text>
-                </svg>
-              </div>
-              <div class="circle-label">${type.toUpperCase()} Wahrscheinlichkeit</div>
+          <div class="circle-item">
+            <div class="probability-circle">
+              <svg viewBox="0 0 120 120" width="120" height="120">
+                <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="8"/>
+                <circle cx="60" cy="60" r="50" fill="none"
+                  stroke="${color}"
+                  stroke-width="10"
+                  stroke-dasharray="${circumference}"
+                  stroke-dashoffset="${offset}"
+                  stroke-linecap="round"
+                  transform="rotate(-90 60 60)"
+                  class="probability-progress"/>
+                <text x="60" y="70"
+                  text-anchor="middle"
+                  font-family="system-ui, -apple-system, sans-serif"
+                  font-size="32"
+                  font-weight="bold"
+                  fill="#ffffff">
+                  ${percent}%
+                </text>
+              </svg>
             </div>
-            ${volumeRingHtml}
+            <div class="circle-label">${type.toUpperCase()} Wahrscheinlichkeit</div>
           </div>
           <div class="risk-level ${level}">${riskLevelText}</div>
         </div>
       </div>
     </div>
   `;
+}
+
+/**
+ * Render volume card as separate card (PWA style)
+ * @param {object} formData - Form data containing GFAP
+ * @returns {string} HTML for volume card
+ */
+function renderVolumeCard(formData) {
+  const gfapValue = getGFAPValue(formData);
+  if (!gfapValue || gfapValue <= 0) {
+    return '';
+  }
+
+  const estimatedVolume = estimateICHVolume(gfapValue);
+  const volumeColor = getVolumeColor(estimatedVolume);
+  const mortality = estimateMortalityFromVolume(estimatedVolume);
+
+  // Calculate progress ring (max 100ml = 100%)
+  const volumePercent = Math.min((estimatedVolume / 100) * 100, 100);
+  const circumference = Math.PI * 100;
+  const offset = circumference * (1 - volumePercent / 100);
+
+  const volumeDisplay = estimatedVolume < 1 ? '<1' : estimatedVolume.toFixed(1);
+
+  return `
+    <div class="content-section">
+      <h3>🧮 ICH Blutungsvolumen / ICH Volume Estimate</h3>
+      <div class="enhanced-risk-card volume-card normal">
+        <div class="risk-probability">
+          <div class="circles-container">
+            <div class="circle-item">
+              <div class="probability-circle">
+                <svg viewBox="0 0 120 120" width="120" height="120">
+                  <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="8"/>
+                  <circle cx="60" cy="60" r="50" fill="none"
+                    stroke="${volumeColor}"
+                    stroke-width="10"
+                    stroke-dasharray="${circumference}"
+                    stroke-dashoffset="${offset}"
+                    stroke-linecap="round"
+                    transform="rotate(-90 60 60)"
+                    class="probability-progress volume-ring"/>
+                  <text x="60" y="60"
+                    text-anchor="middle"
+                    font-family="system-ui, -apple-system, sans-serif"
+                    font-size="24"
+                    font-weight="bold"
+                    fill="#ffffff">
+                    ${volumeDisplay}
+                  </text>
+                  <text x="60" y="78"
+                    text-anchor="middle"
+                    font-family="system-ui, -apple-system, sans-serif"
+                    font-size="14"
+                    fill="rgba(255,255,255,0.7)">
+                    mL
+                  </text>
+                </svg>
+              </div>
+              <div class="circle-label">Blutungsvolumen / Bleed Volume</div>
+            </div>
+          </div>
+          <div class="volume-info">
+            <div class="mortality-estimate">
+              <span class="mortality-label">Voraussichtliche 30-Tage-Mortalität / Predicted 30-day Mortality:</span>
+              <span class="mortality-value">${mortality}</span>
+            </div>
+            <div class="volume-note">
+              <small>Geschätzt von GFAP / Estimated from GFAP: ${gfapValue} pg/mL</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Estimate mortality from volume
+ * @param {number} volume - ICH volume in ml
+ * @returns {string} Mortality range
+ */
+function estimateMortalityFromVolume(volume) {
+  if (volume < 30) return '<30%';
+  if (volume < 60) return '30-50%';
+  return '>50%';
 }
 
 /**
@@ -583,61 +665,6 @@ function getVolumeColor(volume) {
   if (volume >= 15) return '#ff8800'; // High risk
   if (volume >= 5) return '#ffcc00';  // Moderate
   return '#0066cc'; // Low volume
-}
-
-/**
- * Render ICH volume ring if GFAP data is available
- * @param {object} formData - Form data containing GFAP
- * @returns {string} HTML for volume ring or empty string
- */
-function renderICHVolumeRing(formData) {
-  const gfapValue = getGFAPValue(formData);
-  if (!gfapValue || gfapValue <= 0) return '';
-
-  const estimatedVolume = estimateICHVolume(gfapValue);
-  const volumeColor = getVolumeColor(estimatedVolume);
-
-  // Calculate progress ring (max 100ml = 100%)
-  const volumePercent = Math.min((estimatedVolume / 100) * 100, 100);
-  const circumference = Math.PI * 100;
-  const offset = circumference * (1 - volumePercent / 100);
-
-  const volumeDisplay = estimatedVolume < 1 ? '<1' : estimatedVolume.toFixed(1);
-
-  return `
-    <div class="circle-item">
-      <div class="probability-circle">
-        <svg viewBox="0 0 120 120" width="120" height="120">
-          <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="8"/>
-          <circle cx="60" cy="60" r="50" fill="none"
-            stroke="${volumeColor}"
-            stroke-width="10"
-            stroke-dasharray="${circumference}"
-            stroke-dashoffset="${offset}"
-            stroke-linecap="round"
-            transform="rotate(-90 60 60)"
-            class="probability-progress volume-ring"/>
-          <text x="60" y="60"
-            text-anchor="middle"
-            font-family="system-ui, -apple-system, sans-serif"
-            font-size="24"
-            font-weight="bold"
-            fill="#ffffff">
-            ${volumeDisplay}
-          </text>
-          <text x="60" y="78"
-            text-anchor="middle"
-            font-family="system-ui, -apple-system, sans-serif"
-            font-size="14"
-            fill="rgba(255,255,255,0.7)">
-            ml
-          </text>
-        </svg>
-      </div>
-      <div class="circle-label">Blutungsvolumen / Bleed Volume</div>
-      <div class="volume-note">Geschätzt von GFAP / Estimated from GFAP</div>
-    </div>
-  `;
 }
 
 /**
