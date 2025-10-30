@@ -321,17 +321,16 @@ function flashScreen() {
  * Attach event listeners
  */
 function attachEventListeners() {
-  // Click on case card to show details
+  // Click on case card to navigate to PWA results page
   document.addEventListener('click', (e) => {
     const caseCard = e.target.closest('.case-card');
     if (caseCard) {
       const caseId = caseCard.dataset.caseId;
       if (caseId) {
-        const caseData = caseListener.getCase(caseId);
-        if (caseData) {
-          showCaseDetail(caseData);
-          caseListener.markViewed(caseId);
-        }
+        // Navigate to PWA results page in kiosk mode
+        const pwaUrl = `https://igfap.eu/0825/#results?display=kiosk&caseId=${caseId}`;
+        window.location.href = pwaUrl;
+        caseListener.markViewed(caseId);
       }
     }
 
@@ -358,18 +357,17 @@ function attachEventListeners() {
       return;
     }
 
-    // Enter or Space on case card to open details
+    // Enter or Space on case card to navigate to PWA results
     if (e.key === 'Enter' || e.key === ' ') {
       const caseCard = e.target.closest('.case-card');
       if (caseCard) {
         e.preventDefault(); // Prevent scroll on Space
         const caseId = caseCard.dataset.caseId;
         if (caseId) {
-          const caseData = caseListener.getCase(caseId);
-          if (caseData) {
-            showCaseDetail(caseData);
-            caseListener.markViewed(caseId);
-          }
+          // Navigate to PWA results page in kiosk mode
+          const pwaUrl = `https://igfap.eu/0825/#results?display=kiosk&caseId=${caseId}`;
+          window.location.href = pwaUrl;
+          caseListener.markViewed(caseId);
         }
       }
     }
