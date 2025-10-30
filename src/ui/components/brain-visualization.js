@@ -330,6 +330,7 @@ function drawVolumeFluid(canvas, volume) {
   const radius = canvas.width * 0.45; // 45% of canvas width for the circle
   let animationFrame = 0;
   let isAnimating = true;
+  let rafId = null; // Store requestAnimationFrame ID for cleanup
 
   // Check dark mode once
   const isDarkMode = document.body.classList.contains('dark-mode')
@@ -337,6 +338,10 @@ function drawVolumeFluid(canvas, volume) {
 
   function draw() {
     if (!isAnimating) {
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
       return;
     }
 
@@ -424,7 +429,7 @@ function drawVolumeFluid(canvas, volume) {
     // Continue animation
     animationFrame += 1;
     if (volume > 0) {
-      requestAnimationFrame(draw);
+      rafId = requestAnimationFrame(draw);
     }
   }
 
@@ -435,6 +440,10 @@ function drawVolumeFluid(canvas, volume) {
   const observer = new MutationObserver(() => {
     if (!document.contains(canvas)) {
       isAnimating = false;
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
       observer.disconnect();
     }
   });
