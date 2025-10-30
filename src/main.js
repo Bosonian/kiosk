@@ -328,7 +328,7 @@ function attachEventListeners() {
       const caseId = caseCard.dataset.caseId;
       if (caseId) {
         // Navigate to PWA results page in kiosk mode
-        const pwaUrl = `https://igfap.eu/0825/#results?display=kiosk&caseId=${caseId}`;
+        const pwaUrl = `${KIOSK_CONFIG.pwaUrl}#results?display=kiosk&caseId=${caseId}`;
         window.location.href = pwaUrl;
         caseListener.markViewed(caseId);
       }

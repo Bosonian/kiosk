@@ -9,6 +9,11 @@ export const KIOSK_CONFIG = {
   // API Configuration
   caseSharingUrl: 'https://case-sharing-564499947017.europe-west3.run.app',
 
+  // PWA URL - use localhost in development
+  pwaUrl: isDevelopment
+    ? 'http://localhost:3020/0825/'
+    : 'https://igfap.eu/0825/',
+
   // Polling interval (milliseconds)
   pollInterval: 5000, // 5 seconds
 
