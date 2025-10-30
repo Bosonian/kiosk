@@ -5,6 +5,7 @@ yarn-debug.log*
 yarn-error.log*
 
 # Build staging directory (built files are copied to root)
+dist/
 
 # Environment variables
 .env
