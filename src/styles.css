@@ -1263,13 +1263,70 @@ body.flash-success {
 }
 
 @media (max-width: 768px) {
+  :root {
+    --space-xs: 6px;
+    --space-sm: 10px;
+    --space-md: 14px;
+    --space-lg: 18px;
+    --space-xl: 24px;
+    --font-size-sm: 13px;
+    --font-size-base: 16px;
+    --font-size-lg: 19px;
+    --font-size-xl: 24px;
+    --font-size-xxl: 30px;
+  }
+
+  #kioskHeader {
+    padding: var(--space-md);
+  }
+
   .header-content {
     flex-direction: column;
     align-items: flex-start;
+    gap: var(--space-md);
+  }
+
+  .header-content h1 {
+    font-size: var(--font-size-lg);
+  }
+
+  .header-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-sm);
+    width: 100%;
+  }
+
+  .hospital-selector {
+    width: 100%;
+    max-width: 100%;
+    font-size: var(--font-size-sm);
+    padding: var(--space-sm);
+  }
+
+  #casesContainer {
+    padding: var(--space-md);
   }
 
   .cases-grid {
     grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
+
+  .case-card {
+    padding: var(--space-md);
+  }
+
+  .case-risks {
+    gap: var(--space-md);
+  }
+
+  .risk-value {
+    font-size: var(--font-size-lg);
+  }
+
+  .eta-value {
+    font-size: var(--font-size-xl);
   }
 
   .risk-display-large,
@@ -1279,6 +1336,33 @@ body.flash-success {
 
   .data-row {
     grid-template-columns: 1fr;
+    gap: var(--space-sm);
+  }
+
+  /* Modal improvements */
+  .modal-overlay {
+    padding: var(--space-sm);
+  }
+
+  .modal-content {
+    max-width: 100%;
+    max-height: 95vh;
+  }
+
+  .detail-header {
+    padding: var(--space-md);
+  }
+
+  .detail-header h2 {
+    font-size: var(--font-size-lg);
+  }
+
+  .detail-content {
+    padding: var(--space-md);
+  }
+
+  .content-section {
+    margin-bottom: var(--space-lg);
   }
 
   /* Enhanced detail modal responsiveness */
@@ -1293,6 +1377,99 @@ body.flash-success {
   .probability-svg {
     width: 100px;
     height: 100px;
+  }
+
+  .volume-canvas {
+    width: 100px;
+    height: 100px;
+  }
+
+  .tracking-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .close-modal,
+  .dismiss-case-button {
+    padding: var(--space-sm) var(--space-md);
+    font-size: var(--font-size-sm);
+  }
+}
+
+/* Small mobile devices */
+@media (max-width: 480px) {
+  :root {
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 12px;
+    --space-lg: 16px;
+    --space-xl: 20px;
+    --font-size-sm: 12px;
+    --font-size-base: 14px;
+    --font-size-lg: 17px;
+    --font-size-xl: 20px;
+    --font-size-xxl: 26px;
+  }
+
+  #kioskHeader {
+    padding: var(--space-sm);
+  }
+
+  .header-content h1 {
+    font-size: var(--font-size-base);
+  }
+
+  .case-card {
+    padding: var(--space-sm);
+  }
+
+  .case-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .urgency-badge {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+
+  .case-risks {
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .probability-svg {
+    width: 80px;
+    height: 80px;
+  }
+
+  .volume-canvas {
+    width: 80px;
+    height: 80px;
+  }
+
+  .risk-value {
+    font-size: var(--font-size-base);
+  }
+
+  .eta-value {
+    font-size: var(--font-size-lg);
+  }
+
+  .detail-header h2 {
+    font-size: var(--font-size-base);
+  }
+
+  .case-badges {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .compact-driver-label {
+    font-size: 11px;
+  }
+
+  .compact-driver-bar {
+    height: 16px;
   }
 }
 
