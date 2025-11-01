@@ -37,6 +37,9 @@
   --font-size-lg: 22px;
   --font-size-xl: 28px;
   --font-size-xxl: 36px;
+
+  /* Ring sizes - desktop kiosk default (larger for visibility) */
+  --ring-size: 120px;
 }
 
 /* Light theme override */
@@ -942,8 +945,8 @@ body.flash-success {
 }
 
 .probability-svg {
-  width: 120px;
-  height: 120px;
+  width: var(--ring-size);
+  height: var(--ring-size);
   filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
 }
 
@@ -1043,8 +1046,8 @@ body.flash-success {
   align-items: center;
   justify-content: center;
   overflow: visible;
-  width: 120px;
-  height: 120px;
+  width: var(--ring-size);
+  height: var(--ring-size);
 }
 
 .volume-number {
@@ -1058,8 +1061,8 @@ body.flash-success {
 }
 
 .volume-canvas {
-  width: 120px;
-  height: 120px;
+  width: var(--ring-size);
+  height: var(--ring-size);
   background: transparent;
   border-radius: 50%;
 }
@@ -1374,14 +1377,19 @@ body.flash-success {
     grid-template-columns: 1fr;
   }
 
+  /* Adjust ring size for tablets */
+  :root {
+    --ring-size: 110px;
+  }
+
   .probability-svg {
-    width: 100px;
-    height: 100px;
+    width: var(--ring-size);
+    height: var(--ring-size);
   }
 
   .volume-canvas {
-    width: 100px;
-    height: 100px;
+    width: var(--ring-size);
+    height: var(--ring-size);
   }
 
   .tracking-grid {
@@ -1437,14 +1445,19 @@ body.flash-success {
     gap: var(--space-sm);
   }
 
+  /* Adjust ring size for small devices */
+  :root {
+    --ring-size: 90px;
+  }
+
   .probability-svg {
-    width: 80px;
-    height: 80px;
+    width: var(--ring-size);
+    height: var(--ring-size);
   }
 
   .volume-canvas {
-    width: 80px;
-    height: 80px;
+    width: var(--ring-size);
+    height: var(--ring-size);
   }
 
   .risk-value {

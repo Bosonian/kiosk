@@ -280,7 +280,7 @@ export function renderCircularBrainDisplay(volume) {
     return `
       <div class="volume-circle" data-volume="0">
         <div class="volume-number">0<span> ml</span></div>
-        <canvas class="volume-canvas" width="120" height="120"></canvas>
+        <canvas class="volume-canvas"></canvas>
       </div>
     `;
   }
@@ -291,7 +291,7 @@ export function renderCircularBrainDisplay(volume) {
   return `
     <div class="volume-circle" data-volume="${volume}">
       <div class="volume-number">${formattedVolume}</div>
-      <canvas id="${canvasId}" class="volume-canvas" 
+      <canvas id="${canvasId}" class="volume-canvas"
               data-volume="${volume}" data-canvas-id="${canvasId}"></canvas>
     </div>
   `;

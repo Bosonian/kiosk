@@ -307,7 +307,7 @@ function renderEnhancedRiskCard(type, percent, level, results) {
         <div class="circles-container">
           <div class="circle-item">
             <div class="probability-circle">
-              <svg viewBox="0 0 120 120" width="120" height="120">
+              <svg class="probability-svg" viewBox="0 0 120 120">
                 <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="8"/>
                 <circle cx="60" cy="60" r="50" fill="none"
                   stroke="${color}"

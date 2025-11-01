@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 
-export default defineConfig({
-  base: '/kiosk/',
+export default defineConfig(({ command }) => ({
+  base: command === 'serve' ? '/' : '/kiosk/',
   server: {
     port: 3001,
     host: true,
@@ -12,4 +12,4 @@ export default defineConfig({
     minify: 'esbuild',
     sourcemap: true,
   },
-});
+}));
