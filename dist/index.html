@@ -1,50 +1,155 @@
 <!DOCTYPE html>
-<html lang="de">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Notaufnahme Kiosk - Incoming Stroke Cases">
-  <meta name="theme-color" content="#0a0e1a">
-  <title>🏥 Notaufnahme Kiosk - iGFAP</title>
-  <link rel="icon" type="image/png" href="./icons/icon-192.png">
-  <script type="module" crossorigin src="/kiosk/assets/index-CGthO8TG.js"></script>
-  <link rel="stylesheet" crossorigin href="/kiosk/assets/index-DA_VUkuF.css">
-</head>
-<body>
-  <div id="app">
-    <header id="kioskHeader" role="banner">
-      <div class="header-content">
-        <h1>🏥 Notaufnahme - Incoming Cases</h1>
-        <div class="header-meta">
-          <select id="hospitalSelector" class="hospital-selector" aria-label="Select hospital">
+<html
+  lang="de"
+  class="h-full bg-gray-50 dark:bg-gray-900 transition-colors duration-300"
+>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Notaufnahme Kiosk - Incoming Stroke Cases"
+    />
+    <meta name="theme-color" content="#0a0e1a" />
+    <title>🏥 Notaufnahme Kiosk - iGFAP</title>
+    <link rel="icon" type="image/png" href="./icons/icon-192.png" />
+    <script type="module" src="./src/main.js"></script>
+  </head>
+
+  <body
+    class="min-h-screen flex flex-col text-gray-900 dark:text-gray-100 transition-colors duration-300"
+  >
+    <div id="app" class="flex flex-col flex-1">
+      <!-- Header -->
+      <header
+        id="kioskHeader"
+        role="banner"
+        class="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-gray-800 dark:to-gray-900 text-white shadow-md py-4 px-6 flex justify-between items-center"
+      >
+        <h1 class="text-xl sm:text-2xl font-bold flex items-center gap-2">
+          🏥 Notaufnahme - Incoming Cases
+        </h1>
+
+        <div class="flex items-center gap-4">
+          <!-- Hospital Selector -->
+          <select
+            id="hospitalSelector"
+            class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-800 dark:text-gray-100 text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+            aria-label="Select hospital"
+          >
             <option value="">Loading hospitals...</option>
           </select>
-          <button id="themeToggle" class="theme-toggle" title="Toggle light/dark mode" aria-label="Toggle light/dark mode">
-            <span class="theme-icon">☀️</span>
+
+          <!-- Theme Toggle -->
+          <button
+            id="themeToggle"
+            class="w-9 h-9 rounded-full flex items-center justify-center bg-white/20 hover:bg-white/30 dark:bg-gray-700 dark:hover:bg-gray-600 text-lg transition"
+            title="Toggle light/dark mode"
+            aria-label="Toggle light/dark mode"
+          >
+            <span id="themeIcon">☀️</span>
           </button>
-          <span id="currentTime" aria-live="off">--:--</span>
-          <span id="caseCount" class="case-count-badge" role="status" aria-live="polite">0 Cases</span>
-          <span id="connectionStatus" class="status-indicator" role="status" aria-live="polite" aria-label="Connection status: checking">●</span>
+
+          <!-- Current Time -->
+          <span id="currentTime" class="text-sm font-medium tracking-wide"
+            >--:--</span
+          >
+
+          <!-- Case Count -->
+          <span
+            id="caseCount"
+            class="text-xs font-semibold bg-white text-blue-700 dark:bg-gray-700 dark:text-blue-300 px-3 py-1 rounded-full shadow"
+            role="status"
+            aria-live="polite"
+          >
+            0 Cases
+          </span>
+
+          <!-- Connection Status -->
+          <span
+            id="connectionStatus"
+            class="w-3 h-3 rounded-full bg-yellow-400 animate-pulse"
+            role="status"
+            aria-live="polite"
+            aria-label="Connection status: checking"
+          ></span>
         </div>
+      </header>
+
+      <!-- Main -->
+      <main
+        id="casesContainer"
+        role="main"
+        aria-label="Active cases list"
+        class="flex-1 overflow-y-auto p-6"
+      >
+        <div
+          class="loading-state flex flex-col items-center justify-center py-20 text-center"
+          role="status"
+          aria-live="polite"
+        >
+          <div
+            class="w-10 h-10 border-4 border-gray-300 dark:border-gray-600 border-t-blue-500 dark:border-t-blue-400 rounded-full animate-spin mb-4"
+            aria-hidden="true"
+          ></div>
+          <p class="text-gray-600 dark:text-gray-300 text-sm">
+            Connecting to case monitoring system...
+          </p>
+        </div>
+      </main>
+
+      <!-- Footer -->
+      <footer
+        id="kioskFooter"
+        role="contentinfo"
+        class="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm py-3 px-6 text-center"
+      >
+        iGFAP Stroke Triage Assistant • Live Monitoring Active • Auto-refresh:
+        5s
+      </footer>
+    </div>
+
+    <!-- Case Detail Modal -->
+    <div
+      id="caseDetailModal"
+      class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modalTitle"
+    >
+      <div
+        class="modal-content bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full mx-4 p-6 relative"
+      >
+        <!-- Dynamic content goes here -->
       </div>
-    </header>
+    </div>
 
-    <main id="casesContainer" role="main" aria-label="Active cases list">
-      <div class="loading-state" role="status" aria-live="polite">
-        <div class="spinner" aria-hidden="true"></div>
-        <p>Connecting to case monitoring system...</p>
-      </div>
-    </main>
+    <script>
+      // --- THEME TOGGLE ---
+      const html = document.documentElement;
+      const toggleBtn = document.getElementById("themeToggle");
+      const icon = document.getElementById("themeIcon");
 
-    <footer id="kioskFooter" role="contentinfo">
-      <p>iGFAP Stroke Triage Assistant • Live Monitoring Active • Auto-refresh: 5s</p>
-    </footer>
-  </div>
+      // Load saved preference
+      if (
+        localStorage.theme === "dark" ||
+        (!("theme" in localStorage) &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches)
+      ) {
+        html.classList.add("dark");
+        icon.textContent = "🌙";
+      } else {
+        html.classList.remove("dark");
+        icon.textContent = "☀️";
+      }
 
-  <!-- Case Detail Modal (dynamically populated) -->
-  <div id="caseDetailModal" class="modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-    <div class="modal-content"></div>
-  </div>
-
-</body>
+      // Toggle handler
+      toggleBtn.addEventListener("click", () => {
+        html.classList.toggle("dark");
+        const isDark = html.classList.contains("dark");
+        icon.textContent = isDark ? "🌙" : "☀️";
+        localStorage.theme = isDark ? "dark" : "light";
+      });
+    </script>
+  </body>
 </html>
