@@ -2,120 +2,150 @@
 <html lang="de" class="h-full bg-gray-50 dark:bg-gray-900">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
       content="Notaufnahme Kiosk - Incoming Stroke Cases"
     />
     <meta name="theme-color" content="#0a0e1a" />
     <title>🏥 Notaufnahme Kiosk - iGFAP</title>
-
     <link rel="icon" type="image/png" href="./icons/icon-192.png" />
     <script type="module" src="./src/main.js"></script>
   </head>
-
   <body
     class="min-h-screen flex flex-col text-gray-900 dark:text-gray-100 transition-colors duration-300"
   >
     <div id="app" class="flex flex-col flex-1">
-      <!-- HEADER -->
+      <!-- Header -->
       <header
         id="kioskHeader"
         role="banner"
-        class="bg-blue-600 dark:bg-blue-800 text-white shadow-lg px-4 py-3 sm:px-6 sm:py-4"
+        class="bg-blue-600 dark:bg-blue-800 text-white shadow-lg py-4 px-6 flex justify-between items-center"
       >
-        <div
-          class="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center"
-        >
-          <!-- Title -->
-          <h1 class="text-lg sm:text-xl font-bold flex items-center gap-2">
-            🏥 Notaufnahme - Incoming Cases
-          </h1>
+        <h1 class="text-xl sm:text-2xl font-bold flex items-center gap-2">
+          🏥 Notaufnahme - Incoming Cases
+        </h1>
 
-          <!-- RIGHT-SECTION (mobile stacked) -->
-          <div class="flex flex-wrap items-center gap-3 sm:gap-4">
-            <!-- Hospital Selector -->
-            <select
-              id="hospitalSelector"
-              class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-800 dark:text-gray-100 text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition w-full sm:w-auto"
+        <div class="flex items-center gap-4">
+          <!-- Hospital Selector -->
+          <select
+            id="hospitalSelector"
+            class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-800 dark:text-gray-100 text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+            aria-label="Select hospital"
+          >
+            <option value="">Loading hospitals...</option>
+          </select>
+
+          <!-- Theme Toggle -->
+          <button
+            id="themeToggle"
+            class="w-9 h-9 rounded-full flex items-center justify-center bg-white/20 hover:bg-white/30 dark:bg-gray-700 dark:hover:bg-gray-600 text-lg transition"
+            title="Toggle light/dark mode"
+            aria-label="Toggle light/dark mode"
+          >
+            <span class="theme-icon">☀️</span>
+          </button>
+
+          <button
+            id="languageToggle"
+            data-lang="en"
+            class="px-2 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors duration-300 dark:bg-gray-700"
+          >
+            <svg
+              width="20px"
+              height="20px"
+              viewBox="0 0 36 36"
+              xmlns="http://www.w3.org/2000/svg"
+              xmlns:xlink="http://www.w3.org/1999/xlink"
+              aria-hidden="true"
+              role="img"
+              class="iconify iconify--twemoji"
+              preserveAspectRatio="xMidYMid meet"
             >
-              <option value="">Loading hospitals...</option>
-            </select>
+              <path
+                fill="#FFCD05"
+                d="M0 27a4 4 0 0 0 4 4h28a4 4 0 0 0 4-4v-4H0v4z"
+              ></path>
+              <path fill="#ED1F24" d="M0 14h36v9H0z"></path>
+              <path
+                fill="#141414"
+                d="M32 5H4a4 4 0 0 0-4 4v5h36V9a4 4 0 0 0-4-4z"
+              ></path>
+            </svg>
+          </button>
 
-            <!-- Theme Toggle -->
-            <button
-              id="themeToggle"
-              class="w-9 h-9 rounded-full flex items-center justify-center bg-white/20 hover:bg-white/30 dark:bg-gray-700 dark:hover:bg-gray-600 text-lg transition"
-            >
-              <span class="theme-icon">☀️</span>
-            </button>
+          <!-- Current Time -->
+          <span id="currentTime" class="text-sm font-medium tracking-wide"
+            >--:--</span
+          >
 
-            <!-- Language Toggle -->
-            <button
-              id="languageToggle"
-              data-lang="en"
-              class="px-2 py-2 rounded-full bg-gray-100/20 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition"
-            >
-              🌐
-            </button>
+          <!-- Case Count -->
+          <span
+            id="caseCount"
+            class="text-xs font-semibold bg-white text-blue-700 dark:bg-gray-700 dark:text-blue-300 px-3 py-1 rounded-full shadow"
+            role="status"
+            aria-live="polite"
+          >
+            0 Cases
+          </span>
 
-            <!-- Current Time (mobile: shrink text) -->
-            <span
-              id="currentTime"
-              class="text-xs sm:text-sm font-medium tracking-wide"
-            >
-              --:--
-            </span>
-
-            <!-- Case Count -->
-            <span
-              id="caseCount"
-              class="text-xs font-semibold bg-white text-blue-700 dark:bg-gray-700 dark:text-blue-300 px-2 py-1 rounded-full shadow"
-            >
-              0 Cases
-            </span>
-
-            <!-- Connection Status Indicator -->
-            <span
-              id="connectionStatus"
-              class="w-3 h-3 rounded-full bg-yellow-400 animate-pulse shrink-0"
-            ></span>
-          </div>
+          <!-- Connection Status -->
+          <span
+            id="connectionStatus"
+            class="w-3 h-3 rounded-full bg-yellow-400 animate-pulse"
+            role="status"
+            aria-live="polite"
+            aria-label="Connection status: checking"
+          ></span>
         </div>
       </header>
 
-      <!-- MAIN CONTENT -->
-      <main id="casesContainer" class="flex-1 overflow-y-auto p-4 sm:p-2">
+      <!-- Main Content -->
+      <main
+        id="casesContainer"
+        role="main"
+        aria-label="Active cases list"
+        class="flex-1 overflow-y-auto p-6"
+      >
         <div
           class="loading-state flex flex-col items-center justify-center py-20 text-center"
+          role="status"
+          aria-live="polite"
         >
           <div
-            class="w-8 h-8 sm:w-10 sm:h-10 border-4 border-gray-300 border-t-blue-500 rounded-full animate-spin mb-4"
+            class="w-10 h-10 border-4 border-gray-300 border-t-blue-500 rounded-full animate-spin mb-4"
+            aria-hidden="true"
           ></div>
-          <p class="text-gray-600 dark:text-gray-300 text-sm sm:text-base">
+          <p class="text-gray-600 dark:text-gray-300 text-sm">
             Connecting to case monitoring system...
           </p>
         </div>
       </main>
 
-      <!-- FOOTER -->
+      <!-- Footer -->
       <footer
         id="kioskFooter"
-        class="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs sm:text-sm py-2 sm:py-3 px-4 text-center"
+        role="contentinfo"
+        class="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm py-3 px-6 text-center"
       >
         iGFAP Stroke Triage Assistant • Live Monitoring Active • Auto-refresh:
         5s
       </footer>
     </div>
 
-    <!-- MODAL -->
+    <!-- Case Detail Modal -->
     <div
       id="caseDetailModal"
-      class="modal-overlay fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4"
+      class="modal-overlay hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modalTitle"
     >
       <div
-        class="modal-content bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-lg sm:max-w-2xl p-4 sm:p-6 relative"
-      ></div>
+        class="modal-content bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full mx-4 p-6 relative"
+      >
+        <!-- Dynamic content inserted by JS -->
+      </div>
     </div>
   </body>
 </html>
