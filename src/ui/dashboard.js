@@ -120,7 +120,7 @@ function renderCaseCard(caseData) {
     <div
       class="case-card relative flex flex-col border-2 rounded-xl shadow-md overflow-hidden 
              transition-all duration-300 cursor-pointer focus:ring-2 focus:ring-blue-500 outline-none 
-             bg-white dark:bg-gray-800 hover:scale-[1.02] hover:shadow-lg
+             bg-gray-500 dark:bg-gray-800 hover:scale-[1.02] hover:shadow-lg
              ${
                caseData.urgency.toLowerCase() === "critical"
                  ? "border-red-500"
@@ -167,7 +167,7 @@ function renderCaseCard(caseData) {
       </div>
 
       <!-- Risk Section -->
-      <div class="flex items-center justify-center gap-6 py-4 bg-gray-50 dark:bg-gray-800">
+      <div class="flex items-center justify-center gap-6 py-4 bg-blue-200 dark:bg-gray-800">
         <div class="flex justify-center items-center">
           ${renderRiskRingSVG(ichPercent, "ICH")}
         </div>
@@ -243,7 +243,7 @@ function renderRiskRingSVG(percent, label) {
           stroke-dashoffset="${offset}"
           stroke-linecap="round"
           transform="rotate(-90 60 60)"/>
-        <text x="60" y="65" text-anchor="middle" class="font-bold text-lg fill-white">
+        <text x="60" y="65" text-anchor="middle" class="font-bold text-lg fill-black dark:fill-white">
           ${percent}%
         </text>
       </svg>
