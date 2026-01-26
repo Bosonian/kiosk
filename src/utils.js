@@ -11,7 +11,7 @@ export const CONSTANTS = {
   FETCH_TIMEOUT_MS: 8000,
   MAX_RETRY_ATTEMPTS: 3,
   RETRY_DELAYS_MS: [2000, 4000, 8000], // Exponential backoff
-  CASE_STALE_THRESHOLD_MINUTES: 30,
+  CASE_STALE_THRESHOLD_MINUTES: 30
 };
 
 /**
@@ -21,15 +21,15 @@ export const CONSTANTS = {
  */
 export function getRiskColor(percent) {
   if (percent > 70) {
-    return '#ff4444';
+    return "#ff4444";
   }
   if (percent > 50) {
-    return '#ff8800';
+    return "#ff8800";
   }
   if (percent > 30) {
-    return '#ffcc00';
+    return "#ffcc00";
   }
-  return '#4a90e2';
+  return "#4a90e2";
 }
 
 /**
@@ -39,15 +39,15 @@ export function getRiskColor(percent) {
  */
 export function getRiskLevel(percent) {
   if (percent > 70) {
-    return 'Very High Risk';
+    return "Very High Risk";
   }
   if (percent > 50) {
-    return 'High Risk';
+    return "High Risk";
   }
   if (percent > 30) {
-    return 'Moderate Risk';
+    return "Moderate Risk";
   }
-  return 'Low Risk';
+  return "Low Risk";
 }
 
 /**
@@ -59,15 +59,15 @@ export function formatTime(isoString) {
   try {
     const date = new Date(isoString);
     if (isNaN(date.getTime())) {
-      throw new Error('Invalid date');
+      throw new Error("Invalid date");
     }
-    return date.toLocaleTimeString('de-DE', {
-      hour: '2-digit',
-      minute: '2-digit',
+    return date.toLocaleTimeString("de-DE", {
+      hour: "2-digit",
+      minute: "2-digit"
     });
   } catch (error) {
-    console.warn('[Utils] Invalid time:', isoString, error);
-    return 'Invalid time';
+    console.warn("[Utils] Invalid time:", isoString, error);
+    return "Invalid time";
   }
 }
 
@@ -85,8 +85,8 @@ export function getRelevantTimestamp(caseData) {
 
   // Priority 2: receivedAt (when kiosk first saw this case - most reliable)
   // This is our local timestamp and most accurate for "when did we see this"
-  if (caseData.receivedAt) {
-    return caseData.receivedAt;
+  if (caseData.lastUpdated) {
+    return caseData.lastUpdated;
   }
 
   // Priority 3: tracking.lastUpdated (recent GPS update)
@@ -111,7 +111,7 @@ export function getTimeAgo(timestamp) {
 
   // Protect against invalid dates or future dates
   if (isNaN(then.getTime())) {
-    return 'Unknown';
+    return "Unknown";
   }
 
   const seconds = Math.max(0, Math.floor((now - then) / 1000));
@@ -133,9 +133,7 @@ export function getTimeAgo(timestamp) {
  * @returns {string} Formatted label
  */
 export function formatLabel(key) {
-  return key
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, (l) => l.toUpperCase());
+  return key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 }
 
 /**
@@ -144,22 +142,22 @@ export function formatLabel(key) {
  * @returns {string} Formatted ETA
  */
 export function formatETA(duration) {
-  if (duration === null || duration === undefined || duration === '?') {
-    return '?';
+  if (duration === null || duration === undefined || duration === "?") {
+    return "?";
   }
 
-  const eta = typeof duration === 'string' ? parseFloat(duration) : duration;
+  const eta = typeof duration === "string" ? parseFloat(duration) : duration;
 
   if (isNaN(eta)) {
-    return '?';
+    return "?";
   }
 
   if (eta <= 0) {
-    return 'Arrived';
+    return "Arrived";
   }
 
   if (eta < 1) {
-    return '< 1';
+    return "< 1";
   }
 
   return Math.round(eta).toString();
@@ -196,7 +194,10 @@ export function isGPSStale(lastUpdated, thresholdMinutes = 5) {
  * @param {number} thresholdMinutes - Staleness threshold in minutes
  * @returns {boolean} True if case is stale
  */
-export function isCaseStale(timestamp, thresholdMinutes = CONSTANTS.CASE_STALE_THRESHOLD_MINUTES) {
+export function isCaseStale(
+  timestamp,
+  thresholdMinutes = CONSTANTS.CASE_STALE_THRESHOLD_MINUTES
+) {
   if (!timestamp) {
     return false;
   }
@@ -222,12 +223,12 @@ export function isCaseStale(timestamp, thresholdMinutes = CONSTANTS.CASE_STALE_T
  * @returns {boolean} True if valid
  */
 export function validateCaseData(caseData) {
-  if (!caseData || typeof caseData !== 'object') {
+  if (!caseData || typeof caseData !== "object") {
     return false;
   }
 
   // Required fields
-  if (!caseData.id || typeof caseData.id !== 'string') {
+  if (!caseData.id || typeof caseData.id !== "string") {
     return false;
   }
 
@@ -243,7 +244,10 @@ export function validateCaseData(caseData) {
  */
 export function safeGet(obj, path, defaultValue = null) {
   try {
-    return path.split('.').reduce((current, prop) => current?.[prop], obj) ?? defaultValue;
+    return (
+      path.split(".").reduce((current, prop) => current?.[prop], obj) ??
+      defaultValue
+    );
   } catch {
     return defaultValue;
   }
@@ -256,7 +260,7 @@ export function safeGet(obj, path, defaultValue = null) {
  */
 export function createTimeoutSignal(timeoutMs) {
   // Use native AbortSignal.timeout if available (modern browsers)
-  if (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) {
+  if (typeof AbortSignal !== "undefined" && AbortSignal.timeout) {
     return AbortSignal.timeout(timeoutMs);
   }
 
@@ -267,9 +271,13 @@ export function createTimeoutSignal(timeoutMs) {
   }, timeoutMs);
 
   // Clean up timeout if signal is aborted for other reasons
-  controller.signal.addEventListener('abort', () => {
-    clearTimeout(timeoutId);
-  }, { once: true });
+  controller.signal.addEventListener(
+    "abort",
+    () => {
+      clearTimeout(timeoutId);
+    },
+    { once: true }
+  );
 
   return controller.signal;
 }
@@ -289,80 +297,81 @@ export function sleep(ms) {
  */
 const FIELD_LABEL_MAP = {
   // Age and demographics
-  age_years: 'Alter / Age',
-  age: 'Alter / Age',
+  age_years: "Alter / Age",
+  age: "Alter / Age",
 
   // Blood pressure
-  systolic_bp: 'Systolischer Blutdruck / Systolic BP',
-  diastolic_bp: 'Diastolischer Blutdruck / Diastolic BP',
-  systolic_blood_pressure: 'Systolischer Blutdruck / Systolic BP',
-  diastolic_blood_pressure: 'Diastolischer Blutdruck / Diastolic BP',
-  blood_pressure_systolic: 'Systolischer Blutdruck / Systolic BP',
-  blood_pressure_diastolic: 'Diastolischer Blutdruck / Diastolic BP',
+  systolic_bp: "Systolischer Blutdruck / Systolic BP",
+  diastolic_bp: "Diastolischer Blutdruck / Diastolic BP",
+  systolic_blood_pressure: "Systolischer Blutdruck / Systolic BP",
+  diastolic_blood_pressure: "Diastolischer Blutdruck / Diastolic BP",
+  blood_pressure_systolic: "Systolischer Blutdruck / Systolic BP",
+  blood_pressure_diastolic: "Diastolischer Blutdruck / Diastolic BP",
 
   // Biomarkers
-  gfap_value: 'GFAP-Wert / GFAP Level',
-  gfap: 'GFAP-Wert / GFAP Level',
-  gfap_level: 'GFAP-Wert / GFAP Level',
+  gfap_value: "GFAP-Wert / GFAP Level",
+  gfap: "GFAP-Wert / GFAP Level",
+  gfap_level: "GFAP-Wert / GFAP Level",
 
   // Clinical scores
-  fast_ed_score: 'FAST-ED Score',
-  fast_ed: 'FAST-ED Score',
-  fast_ed_total: 'FAST-ED Score',
-  nihss: 'NIHSS Score',
-  nihss_score: 'NIHSS Score',
+  fast_ed_score: "FAST-ED Score",
+  fast_ed: "FAST-ED Score",
+  fast_ed_total: "FAST-ED Score",
+  nihss: "NIHSS Score",
+  nihss_score: "NIHSS Score",
 
   // Neurological symptoms
-  vigilanzminderung: 'Vigilanzminderung / Reduced Consciousness',
-  vigilance_reduction: 'Vigilanzminderung / Reduced Consciousness',
-  reduced_consciousness: 'Vigilanzminderung / Reduced Consciousness',
-  armparese: 'Armparese / Arm Weakness',
-  arm_paresis: 'Armparese / Arm Weakness',
-  arm_weakness: 'Armparese / Arm Weakness',
-  beinparese: 'Beinparese / Leg Weakness',
-  leg_paresis: 'Beinparese / Leg Weakness',
-  leg_weakness: 'Beinparese / Leg Weakness',
-  eye_deviation: 'Blickdeviation / Eye Deviation',
-  blickdeviation: 'Blickdeviation / Eye Deviation',
-  headache: 'Kopfschmerzen / Headache',
-  kopfschmerzen: 'Kopfschmerzen / Headache',
-  nausea: 'Übelkeit / Nausea',
-  vomiting: 'Erbrechen / Vomiting',
-  aphasia: 'Aphasie / Aphasia',
-  dysarthria: 'Dysarthrie / Dysarthria',
-  ataxia: 'Ataxie / Ataxia',
-  facial_paresis: 'Gesichtsparese / Facial Weakness',
+  vigilanzminderung: "Vigilanzminderung / Reduced Consciousness",
+  vigilance_reduction: "Vigilanzminderung / Reduced Consciousness",
+  reduced_consciousness: "Vigilanzminderung / Reduced Consciousness",
+  armparese: "Armparese / Arm Weakness",
+  arm_paresis: "Armparese / Arm Weakness",
+  arm_weakness: "Armparese / Arm Weakness",
+  beinparese: "Beinparese / Leg Weakness",
+  leg_paresis: "Beinparese / Leg Weakness",
+  leg_weakness: "Beinparese / Leg Weakness",
+  eye_deviation: "Blickdeviation / Eye Deviation",
+  blickdeviation: "Blickdeviation / Eye Deviation",
+  headache: "Kopfschmerzen / Headache",
+  kopfschmerzen: "Kopfschmerzen / Headache",
+  nausea: "Übelkeit / Nausea",
+  vomiting: "Erbrechen / Vomiting",
+  aphasia: "Aphasie / Aphasia",
+  dysarthria: "Dysarthrie / Dysarthria",
+  ataxia: "Ataxie / Ataxia",
+  facial_paresis: "Gesichtsparese / Facial Weakness",
 
   // Medical history
-  atrial_fibrillation: 'Vorhofflimmern / Atrial Fibrillation',
-  vorhofflimmern: 'Vorhofflimmern / Atrial Fibrillation',
-  anticoagulated_noak: 'Antikoagulation (NOAK) / Anticoagulation (NOAC)',
-  anticoagulation: 'Antikoagulation / Anticoagulation',
-  antiplatelets: 'Thrombozytenaggregationshemmer / Antiplatelets',
-  thrombozytenaggregationshemmer: 'Thrombozytenaggregationshemmer / Antiplatelets',
-  diabetes: 'Diabetes Mellitus',
-  hypertension: 'Arterielle Hypertonie / Hypertension',
-  prior_stroke: 'Schlaganfall (Anamnese) / Prior Stroke',
-  prior_tia: 'TIA (Anamnese) / Prior TIA',
+  atrial_fibrillation: "Vorhofflimmern / Atrial Fibrillation",
+  vorhofflimmern: "Vorhofflimmern / Atrial Fibrillation",
+  anticoagulated_noak: "Antikoagulation (NOAK) / Anticoagulation (NOAC)",
+  anticoagulation: "Antikoagulation / Anticoagulation",
+  antiplatelets: "Thrombozytenaggregationshemmer / Antiplatelets",
+  thrombozytenaggregationshemmer:
+    "Thrombozytenaggregationshemmer / Antiplatelets",
+  diabetes: "Diabetes Mellitus",
+  hypertension: "Arterielle Hypertonie / Hypertension",
+  prior_stroke: "Schlaganfall (Anamnese) / Prior Stroke",
+  prior_tia: "TIA (Anamnese) / Prior TIA",
 
   // Timing
-  symptom_onset: 'Symptombeginn / Symptom Onset',
-  onset_time: 'Symptombeginn / Symptom Onset',
-  time_since_onset: 'Zeit seit Symptombeginn / Time Since Onset',
+  symptom_onset: "Symptombeginn / Symptom Onset",
+  onset_time: "Symptombeginn / Symptom Onset",
+  time_since_onset: "Zeit seit Symptombeginn / Time Since Onset"
 };
 
 /**
  * Pattern-based replacements for common medical terms
  */
 const PATTERN_REPLACEMENTS = [
-  { pattern: /_score$/i, replacement: ' Score' },
-  { pattern: /_value$/i, replacement: ' Wert' },
-  { pattern: /_bp$/i, replacement: ' Blutdruck' },
-  { pattern: /_years?$/i, replacement: '' },
-  { pattern: /^ich_/i, replacement: 'ICH ' },
-  { pattern: /^lvo_/i, replacement: 'LVO ' },
-  { pattern: /parese$/i, replacement: 'parese / Weakness' },
-  { pattern: /deviation$/i, replacement: 'deviation / Deviation' },
+  { pattern: /_score$/i, replacement: " Score" },
+  { pattern: /_value$/i, replacement: " Wert" },
+  { pattern: /_bp$/i, replacement: " Blutdruck" },
+  { pattern: /_years?$/i, replacement: "" },
+  { pattern: /^ich_/i, replacement: "ICH " },
+  { pattern: /^lvo_/i, replacement: "LVO " },
+  { pattern: /parese$/i, replacement: "parese / Weakness" },
+  { pattern: /deviation$/i, replacement: "deviation / Deviation" }
 ];
 
 /**
@@ -371,7 +380,7 @@ const PATTERN_REPLACEMENTS = [
  * @returns {string} User-friendly medical label
  */
 export function formatDriverName(fieldName) {
-  if (!fieldName) return '';
+  if (!fieldName) return "";
 
   // First try exact match
   const mapped = FIELD_LABEL_MAP[fieldName.toLowerCase()];
@@ -385,7 +394,7 @@ export function formatDriverName(fieldName) {
 
   // Clean up and format
   formatted = formatted
-    .replace(/_/g, ' ') // Replace underscores with spaces
+    .replace(/_/g, " ") // Replace underscores with spaces
     .replace(/\b\w/g, (l) => l.toUpperCase()) // Title case
     .trim();
 
@@ -400,7 +409,7 @@ export function formatDriverName(fieldName) {
 export function formatSummaryLabel(fieldName) {
   const friendlyLabel = formatDriverName(fieldName);
   // Remove units from labels as they're shown in values
-  return friendlyLabel.replace(/\s*\([^)]*\)\s*/g, '').trim();
+  return friendlyLabel.replace(/\s*\([^)]*\)\s*/g, "").trim();
 }
 
 /**
@@ -409,31 +418,31 @@ export function formatSummaryLabel(fieldName) {
  * @param {string} fieldName - Field name for context
  * @returns {string} Formatted display value
  */
-export function formatDisplayValue(value, fieldName = '') {
-  if (value === null || value === undefined || value === '') {
-    return '—';
+export function formatDisplayValue(value, fieldName = "") {
+  if (value === null || value === undefined || value === "") {
+    return "—";
   }
 
-  if (typeof value === 'boolean') {
-    return value ? '✓ Ja / Yes' : '✗ Nein / No';
+  if (typeof value === "boolean") {
+    return value ? "✓ Ja / Yes" : "✗ Nein / No";
   }
 
-  if (typeof value === 'number') {
+  if (typeof value === "number") {
     const lower = fieldName.toLowerCase();
     // Add units based on field type
-    if (lower.includes('bp') || lower.includes('blood_pressure')) {
+    if (lower.includes("bp") || lower.includes("blood_pressure")) {
       return `${value} mmHg`;
     }
-    if (lower.includes('gfap')) {
+    if (lower.includes("gfap")) {
       return `${value} pg/mL`;
     }
-    if (lower.includes('age')) {
+    if (lower.includes("age")) {
       return `${value} Jahre / years`;
     }
-    if (lower.includes('score')) {
+    if (lower.includes("score")) {
       return value.toString();
     }
-    if (lower.includes('time') || lower.includes('duration')) {
+    if (lower.includes("time") || lower.includes("duration")) {
       return `${value} min`;
     }
 

@@ -223,10 +223,10 @@ function renderRiskRingSVG(percent, label) {
     percent > 70
       ? "text-red-500"
       : percent > 50
-      ? "text-orange-500"
-      : percent > 30
-      ? "text-yellow-400"
-      : "text-green-500";
+        ? "text-orange-500"
+        : percent > 30
+          ? "text-yellow-400"
+          : "text-green-500";
 
   return `
     <div class="flex flex-col items-center">
