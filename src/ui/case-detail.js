@@ -4,15 +4,17 @@
  * Enhanced with PWA-style beautiful results display
  */
 import {
-  getRiskColor,
   getRiskLevel,
   formatTime,
   formatLabel,
   formatDriverName,
   formatSummaryLabel,
   formatDisplayValue
-} from '../utils.js';
-import { renderCircularBrainDisplay, initializeVolumeAnimations } from './components/brain-visualization.js';
+} from "../utils.js";
+import {
+  renderCircularBrainDisplay,
+  initializeVolumeAnimations
+} from "./components/brain-visualization.js";
 
 /**
  * Get risk level classification for styling
@@ -20,26 +22,28 @@ import { renderCircularBrainDisplay, initializeVolumeAnimations } from './compon
  * @returns {string} Risk level ('critical', 'high', 'normal')
  */
 function getRiskLevelClass(percent) {
-  if (percent > 70) return 'critical';
-  if (percent > 50) return 'high';
-  return 'normal';
+  if (percent > 70) return "critical";
+  if (percent > 50) return "high";
+  return "normal";
 }
 
 /**
  * Generate unique patient code from case ID
  */
 function generatePatientCode(caseId) {
-  if (!caseId) return 'PAT-0000';
+  if (!caseId) return "PAT-0000";
 
   // Create a simple hash from the case ID
   let hash = 0;
   for (let i = 0; i < caseId.length; i++) {
-    hash = ((hash << 5) - hash) + caseId.charCodeAt(i);
+    hash = (hash << 5) - hash + caseId.charCodeAt(i);
     hash = hash & hash; // Convert to 32bit integer
   }
 
   // Convert to positive 4-digit number
-  const code = Math.abs(hash % 10000).toString().padStart(4, '0');
+  const code = Math.abs(hash % 10000)
+    .toString()
+    .padStart(4, "0");
   return `PAT-${code}`;
 }
 
@@ -51,7 +55,7 @@ function generatePatientCode(caseId) {
  */
 function isValidInputValue(value) {
   // Always skip null, undefined, empty string
-  if (value === null || value === undefined || value === '') {
+  if (value === null || value === undefined || value === "") {
     return false;
   }
 
@@ -61,24 +65,24 @@ function isValidInputValue(value) {
   }
 
   // Skip 0 or "0" (might be default number)
-  if (value === 0 || value === '0') {
+  if (value === 0 || value === "0") {
     return false;
   }
 
   // Skip negative/default string patterns (case insensitive)
-  if (typeof value === 'string') {
+  if (typeof value === "string") {
     const lowerValue = value.toLowerCase().trim();
 
     // Check for explicit "No" patterns
     const defaultPatterns = [
-      'no',
-      'nein',
-      'none',
-      'keine',
-      'unknown',
-      'unbekannt',
-      'n/a',
-      'not applicable'
+      "no",
+      "nein",
+      "none",
+      "keine",
+      "unknown",
+      "unbekannt",
+      "n/a",
+      "not applicable"
     ];
 
     if (defaultPatterns.includes(lowerValue)) {
@@ -106,22 +110,22 @@ function isValidInputValue(value) {
 }
 
 export function showCaseDetail(caseData) {
-  const modal = document.getElementById('caseDetailModal');
+  const modal = document.getElementById("caseDetailModal");
   if (!modal) {
-    console.error('[CaseDetail] Modal element not found');
+    console.error("[CaseDetail] Modal element not found");
     return;
   }
 
-  const modalContent = modal.querySelector('.modal-content');
+  const modalContent = modal.querySelector(".modal-content");
   if (!modalContent) {
-    console.error('[CaseDetail] Modal content element not found');
+    console.error("[CaseDetail] Modal content element not found");
     return;
   }
 
   // CRITICAL: Deep clone caseData to prevent data mixing between cases
   const safeCaseData = JSON.parse(JSON.stringify(caseData));
 
-  console.log('[CaseDetail] Showing case:', {
+  console.log("[CaseDetail] Showing case:", {
     id: safeCaseData.id,
     moduleType: safeCaseData.moduleType,
     formDataKeys: Object.keys(safeCaseData.formData || {})
@@ -131,7 +135,7 @@ export function showCaseDetail(caseData) {
   modalContent.innerHTML = renderDetailView(safeCaseData);
 
   // Show modal
-  modal.style.display = 'flex';
+  modal.style.display = "flex";
 
   // Initialize volume animations after DOM update
   setTimeout(() => {
@@ -149,39 +153,54 @@ export function showCaseDetail(caseData) {
  * @param {string} caseId - Case ID
  */
 function attachDismissHandler(caseId) {
-  const dismissButton = document.querySelector('.dismiss-case-button');
+  const dismissButton = document.querySelector(".dismiss-case-button");
   if (dismissButton) {
     // Remove any existing listeners
     const newButton = dismissButton.cloneNode(true);
     dismissButton.parentNode.replaceChild(newButton, dismissButton);
 
     // Add fresh click listener
-    newButton.addEventListener('click', (e) => {
+    newButton.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
-      console.log('[CaseDetail] Dismiss button clicked for case:', caseId);
+      console.log("[CaseDetail] Dismiss button clicked for case:", caseId);
 
       // Dispatch custom event that main.js will handle
-      window.dispatchEvent(new CustomEvent('dismissCase', { detail: { caseId } }));
+      window.dispatchEvent(
+        new CustomEvent("dismissCase", { detail: { caseId } })
+      );
     });
 
-    console.log('[CaseDetail] Dismiss button handler attached for case:', caseId);
+    console.log(
+      "[CaseDetail] Dismiss button handler attached for case:",
+      caseId
+    );
   } else {
-    console.warn('[CaseDetail] Dismiss button not found in DOM');
+    console.warn("[CaseDetail] Dismiss button not found in DOM");
   }
 }
 
 function renderDetailView(caseData) {
-  const { results, formData, moduleType, tracking, urgency, createdAt, updatedAt } = caseData;
+  const {
+    results,
+    formData,
+    moduleType,
+    tracking,
+    urgency,
+    createdAt,
+    updatedAt
+  } = caseData;
   const patientCode = generatePatientCode(caseData.id);
 
   // Calculate risk percentages
   const ichPercent = Math.round((results?.ich?.probability || 0) * 100);
-  const lvoPercent = results?.lvo ? Math.round(results.lvo.probability * 100) : null;
+  const lvoPercent = results?.lvo
+    ? Math.round(results.lvo.probability * 100)
+    : null;
 
   // Determine risk levels for styling
   const ichLevel = getRiskLevelClass(ichPercent);
-  const lvoLevel = lvoPercent ? getRiskLevelClass(lvoPercent) : 'normal';
+  const lvoLevel = lvoPercent ? getRiskLevelClass(lvoPercent) : "normal";
 
   // Determine card layout (single, dual, or triple)
   let cardCount = 1; // Always have ICH
@@ -189,7 +208,8 @@ function renderDetailView(caseData) {
     cardCount++;
   }
 
-  const layoutClass = cardCount === 1 ? 'risk-results-single' : 'risk-results-dual';
+  const layoutClass =
+    cardCount === 1 ? "risk-results-single" : "risk-results-dual";
 
   return `
     <div class="case-detail-container">
@@ -210,13 +230,13 @@ function renderDetailView(caseData) {
         <div class="content-section">
           <h3>🎯 Risikobewertung / Risk Assessment</h3>
           <div class="${layoutClass}">
-            ${renderEnhancedRiskCard('ich', ichPercent, ichLevel, results)}
-            ${lvoPercent !== null ? renderEnhancedRiskCard('lvo', lvoPercent, lvoLevel, results) : ''}
+            ${renderEnhancedRiskCard("ich", ichPercent, ichLevel, results)}
+            ${lvoPercent !== null ? renderEnhancedRiskCard("lvo", lvoPercent, lvoLevel, results) : ""}
           </div>
         </div>
 
         <!-- ICH Volume Card (separate, like PWA) -->
-        ${ichPercent >= 50 ? renderVolumeCard(formData) : ''}
+        ${ichPercent >= 50 ? renderVolumeCard(formData) : ""}
 
         <!-- Entscheidungshilfe Speedometer (shown if meaningful signal) -->
         ${renderEntscheidungshilfe(ichPercent, lvoPercent)}
@@ -230,19 +250,19 @@ function renderDetailView(caseData) {
           <div class="tracking-grid">
             <div class="tracking-item">
               <div class="tracking-label">ETA</div>
-              <div class="tracking-value">${tracking?.duration || '?'} min</div>
+              <div class="tracking-value">${tracking?.duration || "?"} min</div>
             </div>
             <div class="tracking-item">
               <div class="tracking-label">Entfernung / Distance</div>
-              <div class="tracking-value">${tracking?.distance ? tracking.distance.toFixed(1) : '?'} km</div>
+              <div class="tracking-value">${tracking?.distance ? tracking.distance.toFixed(1) : "?"} km</div>
             </div>
             <div class="tracking-item">
               <div class="tracking-label">Letzte Aktualisierung / Last Update</div>
-              <div class="tracking-value">${tracking?.lastUpdated ? formatTime(tracking.lastUpdated) : 'Unknown'}</div>
+              <div class="tracking-value">${tracking?.lastUpdated ? formatTime(tracking.lastUpdated) : "Unknown"}</div>
             </div>
             <div class="tracking-item">
               <div class="tracking-label">Voraussichtliche Ankunft / Estimated Arrival</div>
-              <div class="tracking-value">${tracking?.estimatedArrival ? formatTime(tracking.estimatedArrival) : 'Unknown'}</div>
+              <div class="tracking-value">${tracking?.estimatedArrival ? formatTime(tracking.estimatedArrival) : "Unknown"}</div>
             </div>
           </div>
         </div>
@@ -280,13 +300,14 @@ function renderDetailView(caseData) {
  * @returns {string} HTML for enhanced risk card
  */
 function renderEnhancedRiskCard(type, percent, level, results) {
-  const icons = { ich: '🩸', lvo: '🧠' };
+  const icons = { ich: "🩸", lvo: "🧠" };
   const titles = {
-    ich: 'ICH Risiko / ICH Risk',
-    lvo: 'LVO Risiko / LVO Risk'
+    ich: "ICH Risiko / ICH Risk",
+    lvo: "LVO Risiko / LVO Risk"
   };
 
-  const color = level === 'critical' ? '#ff4444' : level === 'high' ? '#ff8800' : '#0066cc';
+  const color =
+    level === "critical" ? "#ff4444" : level === "high" ? "#ff8800" : "#0066cc";
   const riskLevelText = getRiskLevel(percent);
 
   // SVG circle progress
@@ -299,7 +320,7 @@ function renderEnhancedRiskCard(type, percent, level, results) {
         <div class="risk-icon">${icons[type]}</div>
         <div class="risk-title">
           <h3>${titles[type]}</h3>
-          <span class="risk-module">${type === 'ich' ? 'Blutungsrisiko' : 'Verschlussrisiko'}</span>
+          <span class="risk-module">${type === "ich" ? "Blutungsrisiko" : "Verschlussrisiko"}</span>
         </div>
       </div>
 
@@ -344,7 +365,7 @@ function renderEnhancedRiskCard(type, percent, level, results) {
 function renderVolumeCard(formData) {
   const gfapValue = getGFAPValue(formData);
   if (!gfapValue || gfapValue <= 0) {
-    return '';
+    return "";
   }
 
   const estimatedVolume = estimateICHVolume(gfapValue);
@@ -384,9 +405,9 @@ function renderVolumeCard(formData) {
  * @returns {string} Mortality range
  */
 function estimateMortalityFromVolume(volume) {
-  if (volume < 30) return '<30%';
-  if (volume < 60) return '30-50%';
-  return '>50%';
+  if (volume < 30) return "<30%";
+  if (volume < 60) return "30-50%";
+  return ">50%";
 }
 
 /**
@@ -396,7 +417,7 @@ function estimateMortalityFromVolume(volume) {
  */
 function renderEnhancedDriversSection(results) {
   if (!results?.ich?.drivers && !results?.lvo?.drivers) {
-    return '';
+    return "";
   }
 
   let html = `
@@ -407,12 +428,22 @@ function renderEnhancedDriversSection(results) {
 
   // Render ICH drivers if available
   if (results?.ich?.drivers) {
-    html += renderEnhancedDriversPanel(results.ich.drivers, 'ICH', 'ich', results.ich.probability);
+    html += renderEnhancedDriversPanel(
+      results.ich.drivers,
+      "ICH",
+      "ich",
+      results.ich.probability
+    );
   }
 
   // Render LVO drivers if available
   if (results?.lvo?.drivers && results.lvo.probability > 0) {
-    html += renderEnhancedDriversPanel(results.lvo.drivers, 'LVO', 'lvo', results.lvo.probability);
+    html += renderEnhancedDriversPanel(
+      results.lvo.drivers,
+      "LVO",
+      "lvo",
+      results.lvo.probability
+    );
   }
 
   html += `
@@ -433,24 +464,32 @@ function renderEnhancedDriversSection(results) {
  */
 function renderEnhancedDriversPanel(drivers, title, type, probability) {
   if (!drivers || (!drivers.positive && !drivers.negative)) {
-    return '';
+    return "";
   }
 
   const positiveDrivers = (drivers.positive || []).slice(0, 5);
   const negativeDrivers = (drivers.negative || []).slice(0, 5);
 
   // Calculate max weight for bar sizing
-  const allWeights = [...positiveDrivers, ...negativeDrivers].map(d => Math.abs(d.weight));
+  const allWeights = [...positiveDrivers, ...negativeDrivers].map((d) =>
+    Math.abs(d.weight)
+  );
   const maxWeight = Math.max(...allWeights, 0.01);
 
   // Calculate relative importance percentages
-  const totalPositiveWeight = positiveDrivers.reduce((sum, d) => sum + Math.abs(d.weight), 0);
-  const totalNegativeWeight = negativeDrivers.reduce((sum, d) => sum + Math.abs(d.weight), 0);
+  const totalPositiveWeight = positiveDrivers.reduce(
+    (sum, d) => sum + Math.abs(d.weight),
+    0
+  );
+  const totalNegativeWeight = negativeDrivers.reduce(
+    (sum, d) => sum + Math.abs(d.weight),
+    0
+  );
 
   return `
     <div class="enhanced-drivers-panel ${type}">
       <div class="panel-header">
-        <div class="panel-icon ${type}">${type === 'ich' ? '🩸' : '🧠'}</div>
+        <div class="panel-icon ${type}">${type === "ich" ? "🩸" : "🧠"}</div>
         <div class="panel-title">
           <h4>${title} Faktoren / Factors</h4>
           <span class="panel-subtitle">Beitrag zum Gesamtrisiko / Contributing to overall risk</span>
@@ -464,14 +503,24 @@ function renderEnhancedDriversPanel(drivers, title, type, probability) {
             <span class="column-title">Risiko erhöhend / Increasing Risk</span>
           </div>
           <div class="compact-drivers">
-            ${positiveDrivers.length > 0
-              ? positiveDrivers.map(d => {
-                  const relativeImportance = totalPositiveWeight > 0
-                    ? (Math.abs(d.weight) / totalPositiveWeight) * 100 : 0;
-                  const barWidth = (Math.abs(d.weight) / maxWeight) * 100;
-                  return renderCompactDriver(d, 'positive', relativeImportance, barWidth);
-                }).join('')
-              : '<div class="no-factors">Keine Faktoren / No factors</div>'
+            ${
+              positiveDrivers.length > 0
+                ? positiveDrivers
+                    .map((d) => {
+                      const relativeImportance =
+                        totalPositiveWeight > 0
+                          ? (Math.abs(d.weight) / totalPositiveWeight) * 100
+                          : 0;
+                      const barWidth = (Math.abs(d.weight) / maxWeight) * 100;
+                      return renderCompactDriver(
+                        d,
+                        "positive",
+                        relativeImportance,
+                        barWidth
+                      );
+                    })
+                    .join("")
+                : '<div class="no-factors">Keine Faktoren / No factors</div>'
             }
           </div>
         </div>
@@ -482,14 +531,24 @@ function renderEnhancedDriversPanel(drivers, title, type, probability) {
             <span class="column-title">Risiko mindernd / Decreasing Risk</span>
           </div>
           <div class="compact-drivers">
-            ${negativeDrivers.length > 0
-              ? negativeDrivers.map(d => {
-                  const relativeImportance = totalNegativeWeight > 0
-                    ? (Math.abs(d.weight) / totalNegativeWeight) * 100 : 0;
-                  const barWidth = (Math.abs(d.weight) / maxWeight) * 100;
-                  return renderCompactDriver(d, 'negative', relativeImportance, barWidth);
-                }).join('')
-              : '<div class="no-factors">Keine Faktoren / No factors</div>'
+            ${
+              negativeDrivers.length > 0
+                ? negativeDrivers
+                    .map((d) => {
+                      const relativeImportance =
+                        totalNegativeWeight > 0
+                          ? (Math.abs(d.weight) / totalNegativeWeight) * 100
+                          : 0;
+                      const barWidth = (Math.abs(d.weight) / maxWeight) * 100;
+                      return renderCompactDriver(
+                        d,
+                        "negative",
+                        relativeImportance,
+                        barWidth
+                      );
+                    })
+                    .join("")
+                : '<div class="no-factors">Keine Faktoren / No factors</div>'
             }
           </div>
         </div>
@@ -514,7 +573,7 @@ function renderCompactDriver(driver, type, relativeImportance, barWidth) {
     <div class="compact-driver-item">
       <div class="compact-driver-label">${cleanLabel}</div>
       <div class="compact-driver-bar ${type}" style="width: ${barWidth}%">
-        <span class="compact-driver-value">${type === 'positive' ? '+' : '-'}${relativeImportance.toFixed(0)}%</span>
+        <span class="compact-driver-value">${type === "positive" ? "+" : "-"}${relativeImportance.toFixed(0)}%</span>
       </div>
     </div>
   `;
@@ -527,14 +586,13 @@ function renderCompactDriver(driver, type, relativeImportance, barWidth) {
  */
 function getUrgencyColor(urgency) {
   const colors = {
-    IMMEDIATE: '#ff4444',
-    TIME_CRITICAL: '#ff8800',
-    URGENT: '#ffcc00',
-    STANDARD: '#4a90e2',
+    IMMEDIATE: "#ff4444",
+    TIME_CRITICAL: "#ff8800",
+    URGENT: "#ffcc00",
+    STANDARD: "#4a90e2"
   };
-  return colors[urgency] || '#4a90e2';
+  return colors[urgency] || "#4a90e2";
 }
-
 
 /**
  * Render enhanced input summary matching PWA style
@@ -547,9 +605,10 @@ function renderFormData(formData) {
   }
 
   // Check if formData is structured by modules or flat
-  const isModularData = typeof Object.values(formData)[0] === 'object'
-    && !Array.isArray(Object.values(formData)[0])
-    && Object.values(formData)[0] !== null;
+  const isModularData =
+    typeof Object.values(formData)[0] === "object" &&
+    !Array.isArray(Object.values(formData)[0]) &&
+    Object.values(formData)[0] !== null;
 
   if (isModularData) {
     // Render modular data (grouped by assessment module)
@@ -566,23 +625,24 @@ function renderFormData(formData) {
  * @returns {string} HTML for modular summary
  */
 function renderModularInputSummary(formData) {
-  let summaryHtml = '';
+  let summaryHtml = "";
 
   // Module icons and titles
   const moduleConfig = {
-    coma: { icon: '🚨', title: 'Coma Modul / Module' },
-    limited: { icon: '⚡', title: 'Limited Modul / Module' },
-    full: { icon: '📊', title: 'Full Modul / Module' }
+    coma: { icon: "🚨", title: "Coma Modul / Module" },
+    limited: { icon: "⚡", title: "Limited Modul / Module" },
+    full: { icon: "📊", title: "Full Modul / Module" }
   };
 
   Object.entries(formData).forEach(([module, data]) => {
-    if (data && typeof data === 'object' && Object.keys(data).length > 0) {
+    if (data && typeof data === "object" && Object.keys(data).length > 0) {
       const config = moduleConfig[module] || {
-        icon: '📋',
-        title: module.charAt(0).toUpperCase() + module.slice(1) + ' Modul / Module'
+        icon: "📋",
+        title:
+          module.charAt(0).toUpperCase() + module.slice(1) + " Modul / Module"
       };
 
-      let itemsHtml = '';
+      let itemsHtml = "";
 
       Object.entries(data).forEach(([key, value]) => {
         // Skip empty, null, undefined, or default values
@@ -617,7 +677,10 @@ function renderModularInputSummary(formData) {
     }
   });
 
-  return summaryHtml || '<p class="no-data">Keine Bewertungsdaten verfügbar / No assessment data available</p>';
+  return (
+    summaryHtml ||
+    '<p class="no-data">Keine Bewertungsdaten verfügbar / No assessment data available</p>'
+  );
 }
 
 /**
@@ -626,11 +689,11 @@ function renderModularInputSummary(formData) {
  * @returns {string} HTML for flat summary
  */
 function renderFlatInputSummary(formData) {
-  let itemsHtml = '';
+  let itemsHtml = "";
 
   Object.entries(formData).forEach(([key, value]) => {
     // Skip empty values, internal fields, and default values
-    if (key.startsWith('_') || !isValidInputValue(value)) {
+    if (key.startsWith("_") || !isValidInputValue(value)) {
       return;
     }
 
@@ -660,7 +723,7 @@ function renderFlatInputSummary(formData) {
 
 function renderDrivers(drivers) {
   if (!drivers || (!drivers.positive && !drivers.negative)) {
-    return '<p>No driver data available</p>';
+    return "<p>No driver data available</p>";
   }
 
   const positive = drivers.positive || [];
@@ -670,36 +733,38 @@ function renderDrivers(drivers) {
     <div class="drivers-container">
       <div class="drivers-column">
         <h4>⬆ Increasing Risk</h4>
-        ${positive.length > 0
-      ? positive
-        .map(
-          (d) => `
+        ${
+          positive.length > 0
+            ? positive
+                .map(
+                  (d) => `
               <div class="driver-item positive">
                 <span class="driver-label">${formatLabel(d.label)}</span>
                 <span class="driver-value">${(Math.abs(d.weight) * 100).toFixed(1)}%</span>
               </div>
-            `,
-        )
-        .join('')
-      : '<p class="no-drivers">None</p>'
-    }
+            `
+                )
+                .join("")
+            : '<p class="no-drivers">None</p>'
+        }
       </div>
 
       <div class="drivers-column">
         <h4>⬇ Decreasing Risk</h4>
-        ${negative.length > 0
-      ? negative
-        .map(
-          (d) => `
+        ${
+          negative.length > 0
+            ? negative
+                .map(
+                  (d) => `
               <div class="driver-item negative">
                 <span class="driver-label">${formatLabel(d.label)}</span>
                 <span class="driver-value">${(Math.abs(d.weight) * 100).toFixed(1)}%</span>
               </div>
-            `,
-        )
-        .join('')
-      : '<p class="no-drivers">None</p>'
-    }
+            `
+                )
+                .join("")
+            : '<p class="no-drivers">None</p>'
+        }
       </div>
     </div>
   `;
@@ -714,7 +779,7 @@ function getGFAPValue(formData) {
   if (!formData) return 0;
 
   // Check if modular data (coma, limited, full modules)
-  for (const module of ['coma', 'limited', 'full']) {
+  for (const module of ["coma", "limited", "full"]) {
     if (formData[module]?.gfap_value) {
       return parseFloat(formData[module].gfap_value);
     }
@@ -753,10 +818,10 @@ function estimateICHVolume(gfapValue) {
  * @returns {string} Hex color
  */
 function getVolumeColor(volume) {
-  if (volume >= 30) return '#ff4444'; // Critical (high mortality)
-  if (volume >= 15) return '#ff8800'; // High risk
-  if (volume >= 5) return '#ffcc00';  // Moderate
-  return '#0066cc'; // Low volume
+  if (volume >= 30) return "#ff4444"; // Critical (high mortality)
+  if (volume >= 15) return "#ff8800"; // High risk
+  if (volume >= 5) return "#ffcc00"; // Moderate
+  return "#0066cc"; // Low volume
 }
 
 /**
@@ -767,30 +832,40 @@ function getVolumeColor(volume) {
  */
 function renderEntscheidungshilfe(ichPercent, lvoPercent) {
   // Only show if both probabilities are significant
-  if (!lvoPercent || lvoPercent < 20 || ichPercent < 20) return '';
+  if (!lvoPercent || lvoPercent < 20 || ichPercent < 20) return "";
 
   const ratio = lvoPercent / Math.max(ichPercent, 1);
   const absDiff = Math.abs(lvoPercent - ichPercent);
 
   // Only show if there's a meaningful signal (difference > 15%)
-  if (absDiff < 15) return '';
+  if (absDiff < 15) return "";
 
   // Calculate needle position (-90 to +90 degrees)
   // Ratio < 0.8 = ICH dominant, > 1.2 = LVO dominant, between = uncertain
   let needleAngle = 0;
-  if (ratio < 0.5) needleAngle = -75; // Strong ICH
-  else if (ratio < 0.8) needleAngle = -45; // Moderate ICH
-  else if (ratio < 1.2) needleAngle = 0; // Uncertain
-  else if (ratio < 2.0) needleAngle = 45; // Moderate LVO
+  if (ratio < 0.5)
+    needleAngle = -75; // Strong ICH
+  else if (ratio < 0.8)
+    needleAngle = -45; // Moderate ICH
+  else if (ratio < 1.2)
+    needleAngle = 0; // Uncertain
+  else if (ratio < 2.0)
+    needleAngle = 45; // Moderate LVO
   else needleAngle = 75; // Strong LVO
 
-  const recommendation = ratio < 0.8
-    ? 'ICH wahrscheinlicher / ICH more likely'
-    : ratio > 1.2
-      ? 'LVO wahrscheinlicher / LVO more likely'
-      : 'Unsicher - beide möglich / Uncertain - both possible';
+  const recommendation =
+    ratio < 0.8
+      ? "ICH wahrscheinlicher / ICH more likely"
+      : ratio > 1.2
+        ? "LVO wahrscheinlicher / LVO more likely"
+        : "Unsicher - beide möglich / Uncertain - both possible";
 
-  const confidence = absDiff > 30 ? 'Hoch / High' : absDiff > 20 ? 'Mittel / Medium' : 'Niedrig / Low';
+  const confidence =
+    absDiff > 30
+      ? "Hoch / High"
+      : absDiff > 20
+        ? "Mittel / Medium"
+        : "Niedrig / Low";
 
   return `
     <div class="content-section entscheidungshilfe-section">
