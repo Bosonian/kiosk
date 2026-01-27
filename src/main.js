@@ -7,7 +7,6 @@ import { i18n, t } from "../localization/i18n.js";
 import { KIOSK_CONFIG } from "./config.js";
 import { caseListener } from "./services/case-listener.js";
 import { renderDashboard } from "./ui/dashboard.js";
-import { showCaseDetail } from "./ui/case-detail.js";
 import { CONSTANTS } from "./utils.js";
 import { safeAsync, ERROR_CATEGORIES } from "./utils/error-handler.js";
 
@@ -233,18 +232,32 @@ function initializeHospitalSelector() {
 
   // Dynamically import hospitals list
   import("./config.js").then(({ AVAILABLE_HOSPITALS, setHospital }) => {
-    // Populate selector
-    selector.innerHTML = AVAILABLE_HOSPITALS.map((h) => {
-      // Check if this option should be selected
-      const isSelected =
-        (h.id === "ALL" && KIOSK_CONFIG.hospitalId === null) ||
-        h.id === KIOSK_CONFIG.hospitalId;
-      return `<option value="${h.id}" ${isSelected ? "selected" : ""}>${
-        h.name
-      }</option>`;
-    }).join("");
+    const currentHospitalId = KIOSK_CONFIG.hospitalId || "ALL";
 
-    // Handle selection changes
+    // 🔒 Ensure ALL is always present and first
+    const hospitals = [
+      { id: "ALL", name: "🌐 All Hospitals (Show All Cases)" },
+      ...AVAILABLE_HOSPITALS.filter((h) => h.id !== "ALL")
+    ];
+
+    selector.innerHTML = hospitals
+      .map(
+        (h) => `
+      <option value="${h.id}">
+        ${h.name}
+      </option>
+    `
+      )
+      .join("");
+
+    // ✅ This will now ALWAYS work
+    selector.value = currentHospitalId;
+
+    // 🔐 Safety fallback
+    if (!selector.value) {
+      selector.value = "ALL";
+    }
+
     selector.addEventListener("change", (e) => {
       const hospitalId = e.target.value;
       if (
@@ -256,9 +269,7 @@ function initializeHospitalSelector() {
       ) {
         setHospital(hospitalId);
       } else {
-        // Restore previous selection
-        selector.value =
-          KIOSK_CONFIG.hospitalId === null ? "ALL" : KIOSK_CONFIG.hospitalId;
+        selector.value = currentHospitalId;
       }
     });
   });

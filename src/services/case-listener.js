@@ -2,14 +2,14 @@
  * Case Listener Service
  * Polls Cloud Function for active cases
  */
-import { KIOSK_CONFIG } from '../config.js';
+import { KIOSK_CONFIG } from "../config.js";
 import {
   createTimeoutSignal,
   sleep,
   validateCaseData,
   isGPSStale,
-  CONSTANTS,
-} from '../utils.js';
+  CONSTANTS
+} from "../utils.js";
 
 export class CaseListener {
   constructor() {
@@ -42,7 +42,11 @@ export class CaseListener {
       this.fetchCases();
     }, this.pollInterval);
 
-    console.log('[CaseListener] Started polling every', this.pollInterval, 'ms');
+    console.log(
+      "[CaseListener] Started polling every",
+      this.pollInterval,
+      "ms"
+    );
   }
 
   /**
@@ -52,7 +56,7 @@ export class CaseListener {
     if (this.intervalId) {
       clearInterval(this.intervalId);
       this.intervalId = null;
-      console.log('[CaseListener] Stopped polling');
+      console.log("[CaseListener] Stopped polling");
     }
   }
 
@@ -67,11 +71,11 @@ export class CaseListener {
         const url = this.buildFetchUrl();
 
         const response = await fetch(url, {
-          method: 'GET',
+          method: "GET",
           headers: {
-            'Accept': 'application/json',
+            Accept: "application/json"
           },
-          signal: createTimeoutSignal(CONSTANTS.FETCH_TIMEOUT_MS),
+          signal: createTimeoutSignal(CONSTANTS.FETCH_TIMEOUT_MS)
         });
 
         if (!response.ok) {
@@ -81,7 +85,7 @@ export class CaseListener {
         const data = await response.json();
 
         if (!data.success) {
-          throw new Error(data.error || 'Failed to fetch cases');
+          throw new Error(data.error || "Failed to fetch cases");
         }
 
         // Success! Reset retry count and update connection status
@@ -97,14 +101,17 @@ export class CaseListener {
           this.onUpdate({
             cases: Array.from(this.cases.values()),
             timestamp: data.timestamp,
-            count: data.count,
+            count: data.count
           });
         }
 
         return; // Success, exit function
       } catch (error) {
         lastError = error;
-        console.error(`[CaseListener] Fetch error (attempt ${attempt + 1}/${CONSTANTS.MAX_RETRY_ATTEMPTS + 1}):`, error);
+        console.error(
+          `[CaseListener] Fetch error (attempt ${attempt + 1}/${CONSTANTS.MAX_RETRY_ATTEMPTS + 1}):`,
+          error
+        );
 
         // If not the last attempt, wait before retrying
         if (attempt < CONSTANTS.MAX_RETRY_ATTEMPTS) {
@@ -116,7 +123,7 @@ export class CaseListener {
     }
 
     // All retries failed
-    console.error('[CaseListener] All retry attempts failed:', lastError);
+    console.error("[CaseListener] All retry attempts failed:", lastError);
     this.isConnected = false;
     this.retryCount++;
 
@@ -130,15 +137,14 @@ export class CaseListener {
    */
   buildFetchUrl() {
     let url = `${this.baseUrl}/get-cases`;
-
     const params = new URLSearchParams();
 
-    // Always read from config for latest hospital selection
-    if (KIOSK_CONFIG.hospitalId) {
-      params.append('hospitalId', KIOSK_CONFIG.hospitalId);
+    // Explicit handling (VERY IMPORTANT)
+    if (KIOSK_CONFIG.hospitalId && KIOSK_CONFIG.hospitalId !== "ALL") {
+      params.append("hospitalId", KIOSK_CONFIG.hospitalId);
     }
 
-    params.append('status', 'in_transit');
+    params.append("status", "in_transit");
 
     const queryString = params.toString();
     if (queryString) {
@@ -159,7 +165,7 @@ export class CaseListener {
     newCases.forEach((caseData) => {
       // Validate case data
       if (!validateCaseData(caseData)) {
-        console.warn('[CaseListener] Invalid case data, skipping:', caseData);
+        console.warn("[CaseListener] Invalid case data, skipping:", caseData);
         return;
       }
 
@@ -177,7 +183,7 @@ export class CaseListener {
       // Enrich tracking data
       const enrichedTracking = {
         ...(caseData.tracking || {}),
-        gpsStale,
+        gpsStale
       };
 
       // Store case with enriched data
@@ -185,17 +191,21 @@ export class CaseListener {
         ...caseData,
         tracking: enrichedTracking,
         isNew, // Flag for new case alert
-        receivedAt: isNew ? new Date() : this.cases.get(caseId).receivedAt,
+        receivedAt: isNew ? new Date() : this.cases.get(caseId).receivedAt
       });
 
       // Log new cases with timestamp info
       if (isNew) {
-        console.log('[CaseListener] New case:', caseId, this.getCaseSummary(caseData));
-        console.log('[CaseListener] Timestamps:', {
+        console.log(
+          "[CaseListener] New case:",
+          caseId,
+          this.getCaseSummary(caseData)
+        );
+        console.log("[CaseListener] Timestamps:", {
           createdAt: caseData.createdAt,
           updatedAt: caseData.updatedAt,
           receivedAt: caseData.receivedAt,
-          trackingLastUpdated: caseData.tracking?.lastUpdated,
+          trackingLastUpdated: caseData.tracking?.lastUpdated
         });
       }
     });
@@ -203,7 +213,7 @@ export class CaseListener {
     // Remove cases that are no longer active
     oldCaseIds.forEach((caseId) => {
       if (!newCaseIds.has(caseId)) {
-        console.log('[CaseListener] Case removed:', caseId);
+        console.log("[CaseListener] Case removed:", caseId);
         this.cases.delete(caseId);
       }
     });
@@ -213,14 +223,16 @@ export class CaseListener {
    * Get case summary for logging
    */
   getCaseSummary(caseData) {
-    const ichPercent = Math.round((caseData.results?.ich?.probability || 0) * 100);
-    const eta = caseData.tracking?.duration || '?';
+    const ichPercent = Math.round(
+      (caseData.results?.ich?.probability || 0) * 100
+    );
+    const eta = caseData.tracking?.duration || "?";
 
     return {
       module: caseData.moduleType,
       ich: `${ichPercent}%`,
       eta: `${eta} min`,
-      urgency: caseData.urgency,
+      urgency: caseData.urgency
     };
   }
 
@@ -259,16 +271,16 @@ export class CaseListener {
       const url = `${this.baseUrl}/archive-case`;
 
       const response = await fetch(url, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
+          "Content-Type": "application/json",
+          Accept: "application/json"
         },
         body: JSON.stringify({
           caseId,
-          reason: 'dismissed_by_kiosk',
+          reason: "dismissed_by_kiosk"
         }),
-        signal: AbortSignal.timeout(8000),
+        signal: AbortSignal.timeout(8000)
       });
 
       if (!response.ok) {
@@ -278,25 +290,25 @@ export class CaseListener {
       const data = await response.json();
 
       if (!data.success) {
-        throw new Error(data.error || 'Failed to dismiss case');
+        throw new Error(data.error || "Failed to dismiss case");
       }
 
       // Remove from local cache
       this.cases.delete(caseId);
-      console.log('[CaseListener] Case dismissed:', caseId);
+      console.log("[CaseListener] Case dismissed:", caseId);
 
       // Trigger update to refresh UI
       if (this.onUpdate) {
         this.onUpdate({
           cases: Array.from(this.cases.values()),
           timestamp: new Date().toISOString(),
-          count: this.cases.size,
+          count: this.cases.size
         });
       }
 
       return data;
     } catch (error) {
-      console.error('[CaseListener] Dismiss error:', error);
+      console.error("[CaseListener] Dismiss error:", error);
       throw error;
     }
   }
@@ -309,7 +321,7 @@ export class CaseListener {
       isConnected: this.isConnected,
       lastFetchTime: this.lastFetchTime,
       caseCount: this.cases.size,
-      isPolling: this.intervalId !== null,
+      isPolling: this.intervalId !== null
     };
   }
 }

@@ -28,7 +28,7 @@ export const KIOSK_CONFIG = {
   hospitalId: (() => {
     const stored = localStorage.getItem("kiosk_hospital_id");
     // Explicitly check for null (not set) vs empty string (ALL selected)
-    if (stored === null) return "BY-NS-001"; // Default on first load
+    if (stored === null) return null; // Default on first load
     if (stored === "") return null; // "ALL" hospitals
     return stored; // Specific hospital
   })(),
