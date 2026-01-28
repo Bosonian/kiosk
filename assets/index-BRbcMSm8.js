@@ -151,4 +151,4 @@ This action will archive the case.`;if(!confirm(n)){console.log("[Kiosk] Case di
 ${s.message}
 
 Please try again or contact support.`);const i=document.querySelector(`[data-case-id="${e}"]`);i&&(i.disabled=!1,i.textContent="🗑️ Dismiss Case")}}function b(){const e=document.getElementById("caseDetailModal");e&&(e.style.display="none",e.querySelector(".modal-content").innerHTML="")}window.addEventListener("error",e=>{console.error("[Kiosk] Unhandled error:",e.error)});window.addEventListener("unhandledrejection",e=>{console.error("[Kiosk] Unhandled rejection:",e.reason)});document.readyState==="loading"?document.addEventListener("DOMContentLoaded",_):_();window.kioskApp={getCases:()=>w,getStatus:()=>f.getStatus(),refresh:()=>f.fetchCases(),playAlert:()=>O()};
-//# sourceMappingURL=index-ChQWY0VQ.js.map
+//# sourceMappingURL=index-BRbcMSm8.js.map
