@@ -102,7 +102,7 @@ function renderCaseCard(caseData) {
   const relevantTimestamp = getRelevantTimestamp(caseData);
   const caseIsStale = isCaseStale(relevantTimestamp);
   const receivedAgo = getTimeAgo(relevantTimestamp);
-  const patientCode = generatePatientCode(caseData.id);
+  const patientCode = caseData.cityCode || generatePatientCode(caseData.id);
 
   const ariaLabel = `${caseData.urgency} case, ${patientCode}, ICH risk ${ichPercent}%, ETA ${formattedETA} minutes`;
 
@@ -142,7 +142,7 @@ function renderCaseCard(caseData) {
                  : ""
              }
              ${caseData.isNew ? "ring-2 ring-blue-400 animate-pulse" : ""}
-             ${caseIsStale ? "opacity-60" : ""}"
+             "
       data-case-id="${caseData.id}"
       style="border-color: ${urgencyConfig.color};"
       role="listitem"
@@ -156,7 +156,7 @@ function renderCaseCard(caseData) {
           ${urgencyConfig.icon} ${caseData.urgency}
         </div>
         <div class="text-xs flex items-center gap-3 opacity-90">
-          <span class="font-mono">${patientCode}</span>
+          <span class="font-mono ${caseData.cityCode ? "text-sm font-bold tracking-wider" : ""}">${patientCode}</span>
        <span class="px-2 py-0.5 text-[11px] font-semibold rounded-full uppercase tracking-wide ${getModuleBadgeClass(
          caseData.moduleType
        )}">
@@ -165,6 +165,14 @@ function renderCaseCard(caseData) {
 
         </div>
       </div>
+
+      <!-- City Code Banner -->
+      ${caseData.cityCode ? `
+      <div class="flex flex-col items-center justify-center py-3 bg-gradient-to-r from-blue-800 to-blue-600 text-white">
+        <span class="text-[10px] uppercase tracking-[0.2em] opacity-60">Patient-Code</span>
+        <span class="text-2xl font-black tracking-wider leading-tight">${caseData.cityCode}</span>
+      </div>
+      ` : ""}
 
       <!-- Risk Section -->
       <div class="flex items-center justify-center gap-6 py-4 bg-blue-200 dark:bg-gray-800">

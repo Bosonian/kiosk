@@ -107,7 +107,12 @@ export function getTimeAgo(timestamp) {
   const now = new Date();
 
   // Handle both Date objects and ISO strings
-  const then = timestamp instanceof Date ? timestamp : new Date(timestamp);
+  // Treat timestamps without timezone info as UTC (server runs in UTC)
+  let isoStr = timestamp instanceof Date ? timestamp.toISOString() : String(timestamp);
+  if (typeof timestamp === 'string' && !/Z$/.test(isoStr) && !/[+-]\d{2}:\d{2}$/.test(isoStr)) {
+    isoStr += 'Z';
+  }
+  const then = new Date(isoStr);
 
   // Protect against invalid dates or future dates
   if (isNaN(then.getTime())) {

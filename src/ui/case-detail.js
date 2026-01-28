@@ -190,7 +190,7 @@ function renderDetailView(caseData) {
     createdAt,
     updatedAt
   } = caseData;
-  const patientCode = generatePatientCode(caseData.id);
+  const patientCode = caseData.cityCode || generatePatientCode(caseData.id);
 
   // Calculate risk percentages
   const ichPercent = Math.round((results?.ich?.probability || 0) * 100);
@@ -219,13 +219,21 @@ function renderDetailView(caseData) {
           <div class="case-badges">
             <span class="badge urgency-badge" style="background: ${getUrgencyColor(urgency)}">${urgency}</span>
             <span class="badge module-badge">${moduleType}</span>
-            <span class="badge patient-code-badge">${patientCode}</span>
+            <span class="badge patient-code-badge" ${caseData.cityCode ? 'style="font-size:1.1rem; letter-spacing:0.05em;"' : ""}>${patientCode}</span>
           </div>
         </div>
         <button class="close-modal" aria-label="Close modal">✕</button>
       </div>
 
       <div class="detail-content">
+        <!-- City Code Banner -->
+        ${caseData.cityCode ? `
+        <div style="text-align:center; padding:20px 16px; margin-bottom:16px; background:linear-gradient(135deg,#1e3a8a,#2563eb); border-radius:12px; color:white;">
+          <div style="font-size:0.7rem; text-transform:uppercase; letter-spacing:0.2em; opacity:0.6; margin-bottom:4px;">Patient-Code</div>
+          <div style="font-size:2.5rem; font-weight:900; letter-spacing:0.08em; line-height:1.1;">${caseData.cityCode}</div>
+        </div>
+        ` : ""}
+
         <!-- Enhanced Risk Assessment Cards -->
         <div class="content-section">
           <h3>🎯 Risikobewertung / Risk Assessment</h3>
