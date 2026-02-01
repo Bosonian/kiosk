@@ -1,14 +1,16 @@
 /**
  * Kiosk Main Application
  * Entry point for Notaufnahme kiosk display
+ * Supports end-to-end encryption for patient data protection
  */
 import "./index.css";
 import { i18n, t } from "../localization/i18n.js";
-import { KIOSK_CONFIG } from "./config.js";
+import { KIOSK_CONFIG, ENCRYPTION_CONFIG } from "./config.js";
 import { caseListener } from "./services/case-listener.js";
 import { renderDashboard } from "./ui/dashboard.js";
 import { CONSTANTS } from "./utils.js";
 import { safeAsync, ERROR_CATEGORIES } from "./utils/error-handler.js";
+import { cryptoService } from "./services/crypto-service.js";
 
 // Application state
 let currentCases = [];
@@ -21,6 +23,19 @@ let isFirstLoad = true;
  */
 async function initializeKiosk() {
   console.log("[Kiosk] Initializing...", KIOSK_CONFIG);
+
+  // Initialize end-to-end encryption for patient data protection
+  if (ENCRYPTION_CONFIG.enabled && ENCRYPTION_CONFIG.encryptionKey) {
+    try {
+      await cryptoService.init(ENCRYPTION_CONFIG.encryptionKey);
+      console.log("[Kiosk] End-to-end encryption initialized");
+    } catch (error) {
+      console.warn("[Kiosk] Encryption initialization failed:", error.message);
+      // Continue without encryption - graceful degradation
+    }
+  } else {
+    console.log("[Kiosk] Encryption disabled or no key configured");
+  }
 
   // Initialize hospital selector
   initializeHospitalSelector();

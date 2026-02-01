@@ -1,6 +1,7 @@
 /**
  * Case Listener Service
  * Polls Cloud Function for active cases
+ * Supports end-to-end encryption for patient data protection
  */
 import { KIOSK_CONFIG } from "../config.js";
 import {
@@ -10,6 +11,7 @@ import {
   isGPSStale,
   CONSTANTS
 } from "../utils.js";
+import { cryptoService } from "./crypto-service.js";
 
 export class CaseListener {
   constructor() {
@@ -93,8 +95,8 @@ export class CaseListener {
         this.isConnected = true;
         this.lastFetchTime = new Date();
 
-        // Process cases
-        this.processCases(data.cases || []);
+        // Process cases (may include decryption)
+        await this.processCases(data.cases || []);
 
         // Notify listeners
         if (this.onUpdate) {
@@ -156,39 +158,53 @@ export class CaseListener {
 
   /**
    * Process fetched cases with validation and enrichment
+   * Decrypts encrypted fields if encryption is enabled
    */
-  processCases(newCases) {
+  async processCases(newCases) {
     const oldCaseIds = new Set(this.cases.keys());
     const newCaseIds = new Set();
 
     // Process each case
-    newCases.forEach((caseData) => {
-      // Validate case data
-      if (!validateCaseData(caseData)) {
-        console.warn("[CaseListener] Invalid case data, skipping:", caseData);
-        return;
+    for (const caseData of newCases) {
+      // Decrypt encrypted fields if present
+      let decryptedCase = caseData;
+      if (cryptoService.isEnabled() && caseData._encrypted) {
+        try {
+          decryptedCase = await cryptoService.decryptFields(caseData);
+          console.log("[CaseListener] Case decrypted:", caseData.id);
+        } catch (decryptError) {
+          console.error("[CaseListener] Decryption failed for case:", caseData.id, decryptError);
+          // Skip this case if decryption fails
+          continue;
+        }
       }
 
-      const caseId = caseData.id;
+      // Validate case data
+      if (!validateCaseData(decryptedCase)) {
+        console.warn("[CaseListener] Invalid case data, skipping:", decryptedCase);
+        continue;
+      }
+
+      const caseId = decryptedCase.id;
       newCaseIds.add(caseId);
 
       const isNew = !this.cases.has(caseId);
 
       // Calculate GPS staleness
       const gpsStale = isGPSStale(
-        caseData.tracking?.lastUpdated,
+        decryptedCase.tracking?.lastUpdated,
         KIOSK_CONFIG.staleGpsMinutes
       );
 
       // Enrich tracking data
       const enrichedTracking = {
-        ...(caseData.tracking || {}),
+        ...(decryptedCase.tracking || {}),
         gpsStale
       };
 
       // Store case with enriched data
       this.cases.set(caseId, {
-        ...caseData,
+        ...decryptedCase,
         tracking: enrichedTracking,
         isNew, // Flag for new case alert
         receivedAt: isNew ? new Date() : this.cases.get(caseId).receivedAt
@@ -199,16 +215,16 @@ export class CaseListener {
         console.log(
           "[CaseListener] New case:",
           caseId,
-          this.getCaseSummary(caseData)
+          this.getCaseSummary(decryptedCase)
         );
         console.log("[CaseListener] Timestamps:", {
-          createdAt: caseData.createdAt,
-          updatedAt: caseData.updatedAt,
-          receivedAt: caseData.receivedAt,
-          trackingLastUpdated: caseData.tracking?.lastUpdated
+          createdAt: decryptedCase.createdAt,
+          updatedAt: decryptedCase.updatedAt,
+          receivedAt: decryptedCase.receivedAt,
+          trackingLastUpdated: decryptedCase.tracking?.lastUpdated
         });
       }
-    });
+    }
 
     // Remove cases that are no longer active
     oldCaseIds.forEach((caseId) => {

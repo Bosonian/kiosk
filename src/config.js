@@ -106,3 +106,27 @@ export const URGENCY_CONFIG = {
     priority: 3
   }
 };
+
+// End-to-end encryption configuration
+// Must match PWA encryption key for decryption to work
+export const ENCRYPTION_CONFIG = {
+  // Encryption key - set via environment variable VITE_ENCRYPTION_KEY
+  encryptionKey: (() => {
+    try {
+      // Check for Vite build-time replacement
+      // eslint-disable-next-line no-undef
+      if (typeof __VITE_ENCRYPTION_KEY__ !== "undefined") {
+        // eslint-disable-next-line no-undef
+        return __VITE_ENCRYPTION_KEY__;
+      }
+    } catch {
+      // Not defined at build time
+    }
+    // Default key for development/testing only
+    // IMPORTANT: Must match PWA encryption key
+    return isDevelopment ? "ha3RPfE+phgxyM6xAble98djW4dDdjnvMCIwv/KzSyA=" : null;
+  })(),
+
+  // Enable/disable encryption
+  enabled: true,
+};
