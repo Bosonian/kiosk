@@ -115,7 +115,7 @@ export const ENCRYPTION_CONFIG = {
     try {
       // Check for Vite build-time replacement
       // eslint-disable-next-line no-undef
-      if (typeof __VITE_ENCRYPTION_KEY__ !== "undefined") {
+      if (typeof __VITE_ENCRYPTION_KEY__ !== "undefined" && __VITE_ENCRYPTION_KEY__) {
         // eslint-disable-next-line no-undef
         return __VITE_ENCRYPTION_KEY__;
       }
