@@ -1,155 +1,122 @@
 <!DOCTYPE html>
-<html
-  lang="de"
-  class="h-full bg-gray-50 dark:bg-gray-900 transition-colors duration-300"
->
+<html lang="de" class="h-full bg-gray-50 dark:bg-gray-900">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
       content="Notaufnahme Kiosk - Incoming Stroke Cases"
     />
     <meta name="theme-color" content="#0a0e1a" />
     <title>🏥 Notaufnahme Kiosk - iGFAP</title>
+
     <link rel="icon" type="image/png" href="./icons/icon-192.png" />
-    <script type="module" src="./src/main.js"></script>
+    <script type="module" crossorigin src="/kiosk/assets/index-0b0b5pIS.js"></script>
+    <link rel="stylesheet" crossorigin href="/kiosk/assets/index-IIYcvSzO.css">
   </head>
 
   <body
     class="min-h-screen flex flex-col text-gray-900 dark:text-gray-100 transition-colors duration-300"
   >
     <div id="app" class="flex flex-col flex-1">
-      <!-- Header -->
+      <!-- HEADER -->
       <header
         id="kioskHeader"
         role="banner"
-        class="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-gray-800 dark:to-gray-900 text-white shadow-md py-4 px-6 flex justify-between items-center"
+        class="bg-blue-600 dark:bg-blue-800 text-white shadow-lg px-4 py-3 sm:px-6 sm:py-4"
       >
-        <h1 class="text-xl sm:text-2xl font-bold flex items-center gap-2">
-          🏥 Notaufnahme - Incoming Cases
-        </h1>
+        <div
+          class="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center"
+        >
+          <!-- Title -->
+          <h1 class="text-lg sm:text-xl font-bold flex items-center gap-2">
+            🏥 Notaufnahme - Incoming Cases
+          </h1>
 
-        <div class="flex items-center gap-4">
-          <!-- Hospital Selector -->
-          <select
-            id="hospitalSelector"
-            class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-800 dark:text-gray-100 text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
-            aria-label="Select hospital"
-          >
-            <option value="">Loading hospitals...</option>
-          </select>
+          <!-- RIGHT-SECTION (mobile stacked) -->
+          <div class="flex flex-wrap items-center gap-3 sm:gap-4">
+            <!-- Hospital Selector -->
+            <select
+              id="hospitalSelector"
+              class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-800 dark:text-gray-100 text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition w-full sm:w-auto"
+            >
+              <option value="">Loading hospitals...</option>
+            </select>
 
-          <!-- Theme Toggle -->
-          <button
-            id="themeToggle"
-            class="w-9 h-9 rounded-full flex items-center justify-center bg-white/20 hover:bg-white/30 dark:bg-gray-700 dark:hover:bg-gray-600 text-lg transition"
-            title="Toggle light/dark mode"
-            aria-label="Toggle light/dark mode"
-          >
-            <span id="themeIcon">☀️</span>
-          </button>
+            <!-- Theme Toggle -->
+            <button
+              id="themeToggle"
+              class="w-9 h-9 rounded-full flex items-center justify-center bg-white/20 hover:bg-white/30 dark:bg-gray-700 dark:hover:bg-gray-600 text-lg transition"
+            >
+              <span class="theme-icon">☀️</span>
+            </button>
 
-          <!-- Current Time -->
-          <span id="currentTime" class="text-sm font-medium tracking-wide"
-            >--:--</span
-          >
+            <!-- Language Toggle -->
+            <button
+              id="languageToggle"
+              data-lang="en"
+              class="px-2 py-2 rounded-full bg-gray-100/20 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition"
+            >
+              🌐
+            </button>
 
-          <!-- Case Count -->
-          <span
-            id="caseCount"
-            class="text-xs font-semibold bg-white text-blue-700 dark:bg-gray-700 dark:text-blue-300 px-3 py-1 rounded-full shadow"
-            role="status"
-            aria-live="polite"
-          >
-            0 Cases
-          </span>
+            <!-- Current Time (mobile: shrink text) -->
+            <span
+              id="currentTime"
+              class="text-xs sm:text-sm font-medium tracking-wide"
+            >
+              --:--
+            </span>
 
-          <!-- Connection Status -->
-          <span
-            id="connectionStatus"
-            class="w-3 h-3 rounded-full bg-yellow-400 animate-pulse"
-            role="status"
-            aria-live="polite"
-            aria-label="Connection status: checking"
-          ></span>
+            <!-- Case Count -->
+            <span
+              id="caseCount"
+              class="text-xs font-semibold bg-white text-blue-700 dark:bg-gray-700 dark:text-blue-300 px-2 py-1 rounded-full shadow"
+            >
+              0 Cases
+            </span>
+
+            <!-- Connection Status Indicator -->
+            <span
+              id="connectionStatus"
+              class="w-3 h-3 rounded-full bg-yellow-400 animate-pulse shrink-0"
+            ></span>
+          </div>
         </div>
       </header>
 
-      <!-- Main -->
-      <main
-        id="casesContainer"
-        role="main"
-        aria-label="Active cases list"
-        class="flex-1 overflow-y-auto p-6"
-      >
+      <!-- MAIN CONTENT -->
+      <main id="casesContainer" class="flex-1 overflow-y-auto p-4 sm:p-2">
         <div
           class="loading-state flex flex-col items-center justify-center py-20 text-center"
-          role="status"
-          aria-live="polite"
         >
           <div
-            class="w-10 h-10 border-4 border-gray-300 dark:border-gray-600 border-t-blue-500 dark:border-t-blue-400 rounded-full animate-spin mb-4"
-            aria-hidden="true"
+            class="w-8 h-8 sm:w-10 sm:h-10 border-4 border-gray-300 border-t-blue-500 rounded-full animate-spin mb-4"
           ></div>
-          <p class="text-gray-600 dark:text-gray-300 text-sm">
+          <p class="text-gray-600 dark:text-gray-300 text-sm sm:text-base">
             Connecting to case monitoring system...
           </p>
         </div>
       </main>
 
-      <!-- Footer -->
+      <!-- FOOTER -->
       <footer
         id="kioskFooter"
-        role="contentinfo"
-        class="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm py-3 px-6 text-center"
+        class="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs sm:text-sm py-2 sm:py-3 px-4 text-center"
       >
         iGFAP Stroke Triage Assistant • Live Monitoring Active • Auto-refresh:
         5s
       </footer>
     </div>
 
-    <!-- Case Detail Modal -->
+    <!-- MODAL -->
     <div
       id="caseDetailModal"
-      class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="modalTitle"
+      class="modal-overlay fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4"
     >
       <div
-        class="modal-content bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full mx-4 p-6 relative"
-      >
-        <!-- Dynamic content goes here -->
-      </div>
+        class="modal-content bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-lg sm:max-w-2xl p-4 sm:p-6 relative"
+      ></div>
     </div>
-
-    <script>
-      // --- THEME TOGGLE ---
-      const html = document.documentElement;
-      const toggleBtn = document.getElementById("themeToggle");
-      const icon = document.getElementById("themeIcon");
-
-      // Load saved preference
-      if (
-        localStorage.theme === "dark" ||
-        (!("theme" in localStorage) &&
-          window.matchMedia("(prefers-color-scheme: dark)").matches)
-      ) {
-        html.classList.add("dark");
-        icon.textContent = "🌙";
-      } else {
-        html.classList.remove("dark");
-        icon.textContent = "☀️";
-      }
-
-      // Toggle handler
-      toggleBtn.addEventListener("click", () => {
-        html.classList.toggle("dark");
-        const isDark = html.classList.contains("dark");
-        icon.textContent = isDark ? "🌙" : "☀️";
-        localStorage.theme = isDark ? "dark" : "light";
-      });
-    </script>
   </body>
 </html>

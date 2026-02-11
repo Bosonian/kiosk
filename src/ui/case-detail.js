@@ -463,6 +463,62 @@ function renderEnhancedDriversSection(results) {
 }
 
 /**
+ * Normalize drivers from API to unified format
+ * Handles both old format (positive/negative arrays) and new absolute_importance format
+ * @param {object} drivers - Raw drivers data from API
+ * @returns {object} Normalized drivers with positive/negative arrays
+ */
+function normalizeDriversForKiosk(drivers) {
+  if (!drivers) return { positive: [], negative: [], maxImportance: 0.01 };
+
+  // Handle new absolute_importance format
+  if (drivers.kind === "absolute_importance" && Array.isArray(drivers.features)) {
+    const positive = drivers.features
+      .filter(f => f.direction === "increases_risk")
+      .map(f => ({
+        label: f.label,
+        weight: f.importance,
+        value: f.value,
+        unit: f.unit,
+        level: f.level
+      }));
+
+    const negative = drivers.features
+      .filter(f => f.direction === "decreases_risk")
+      .map(f => ({
+        label: f.label,
+        weight: f.importance,
+        value: f.value,
+        unit: f.unit,
+        level: f.level
+      }));
+
+    const maxImportance = Math.max(...drivers.features.map(f => f.importance), 0.01);
+
+    return { positive, negative, maxImportance };
+  }
+
+  // Handle old format (already has positive/negative arrays)
+  const positive = drivers.positive || [];
+  const negative = drivers.negative || [];
+  const allWeights = [...positive, ...negative].map(d => Math.abs(d.weight));
+  const maxImportance = Math.max(...allWeights, 0.01);
+
+  return { positive, negative, maxImportance };
+}
+
+/**
+ * Calculate bar width using square root scale for better visual differentiation
+ * @param {number} importance - Feature importance value
+ * @param {number} maxImportance - Maximum importance in the dataset
+ * @returns {number} Bar width percentage (0-100)
+ */
+function calculateBarWidth(importance, maxImportance) {
+  if (!maxImportance || maxImportance <= 0) return 0;
+  return Math.round((Math.sqrt(importance) / Math.sqrt(maxImportance)) * 100);
+}
+
+/**
  * Render enhanced drivers panel with split-view (PWA style)
  * @param {object} drivers - Drivers data with positive/negative arrays
  * @param {string} title - Panel title
@@ -471,28 +527,15 @@ function renderEnhancedDriversSection(results) {
  * @returns {string} HTML for drivers panel
  */
 function renderEnhancedDriversPanel(drivers, title, type, probability) {
-  if (!drivers || (!drivers.positive && !drivers.negative)) {
+  if (!drivers || (!drivers.positive && !drivers.negative && !drivers.features)) {
     return "";
   }
 
-  const positiveDrivers = (drivers.positive || []).slice(0, 5);
-  const negativeDrivers = (drivers.negative || []).slice(0, 5);
-
-  // Calculate max weight for bar sizing
-  const allWeights = [...positiveDrivers, ...negativeDrivers].map((d) =>
-    Math.abs(d.weight)
-  );
-  const maxWeight = Math.max(...allWeights, 0.01);
-
-  // Calculate relative importance percentages
-  const totalPositiveWeight = positiveDrivers.reduce(
-    (sum, d) => sum + Math.abs(d.weight),
-    0
-  );
-  const totalNegativeWeight = negativeDrivers.reduce(
-    (sum, d) => sum + Math.abs(d.weight),
-    0
-  );
+  // Normalize drivers to unified format
+  const normalized = normalizeDriversForKiosk(drivers);
+  const positiveDrivers = normalized.positive.slice(0, 5);
+  const negativeDrivers = normalized.negative.slice(0, 5);
+  const maxImportance = normalized.maxImportance;
 
   return `
     <div class="enhanced-drivers-panel ${type}">
@@ -514,19 +557,7 @@ function renderEnhancedDriversPanel(drivers, title, type, probability) {
             ${
               positiveDrivers.length > 0
                 ? positiveDrivers
-                    .map((d) => {
-                      const relativeImportance =
-                        totalPositiveWeight > 0
-                          ? (Math.abs(d.weight) / totalPositiveWeight) * 100
-                          : 0;
-                      const barWidth = (Math.abs(d.weight) / maxWeight) * 100;
-                      return renderCompactDriver(
-                        d,
-                        "positive",
-                        relativeImportance,
-                        barWidth
-                      );
-                    })
+                    .map((d) => renderCompactDriverWithBar(d, maxImportance, "positive"))
                     .join("")
                 : '<div class="no-factors">Keine Faktoren / No factors</div>'
             }
@@ -542,19 +573,7 @@ function renderEnhancedDriversPanel(drivers, title, type, probability) {
             ${
               negativeDrivers.length > 0
                 ? negativeDrivers
-                    .map((d) => {
-                      const relativeImportance =
-                        totalNegativeWeight > 0
-                          ? (Math.abs(d.weight) / totalNegativeWeight) * 100
-                          : 0;
-                      const barWidth = (Math.abs(d.weight) / maxWeight) * 100;
-                      return renderCompactDriver(
-                        d,
-                        "negative",
-                        relativeImportance,
-                        barWidth
-                      );
-                    })
+                    .map((d) => renderCompactDriverWithBar(d, maxImportance, "negative"))
                     .join("")
                 : '<div class="no-factors">Keine Faktoren / No factors</div>'
             }
@@ -566,7 +585,48 @@ function renderEnhancedDriversPanel(drivers, title, type, probability) {
 }
 
 /**
- * Render compact driver item with animated bar
+ * Render compact driver item with square root scaled bar and importance value
+ * @param {object} driver - Driver object with label, weight, value, unit
+ * @param {number} maxImportance - Maximum importance for scaling
+ * @param {string} type - Type ('positive' or 'negative')
+ * @returns {string} HTML for driver item
+ */
+function renderCompactDriverWithBar(driver, maxImportance, type) {
+  const importance = Math.abs(driver.weight);
+  const barWidth = calculateBarWidth(importance, maxImportance);
+  const cleanLabel = formatDriverName(driver.label);
+  const isPositive = type === "positive";
+
+  // Format value with unit if available
+  let valueDisplay = "";
+  if (driver.value !== undefined && driver.value !== null) {
+    const unit = driver.unit && driver.unit !== "binary" ? ` ${driver.unit}` : "";
+    if (driver.unit === "binary") {
+      valueDisplay = driver.value ? "Ja / Yes" : "Nein / No";
+    } else {
+      valueDisplay = `${driver.value}${unit}`;
+    }
+  }
+
+  const barColor = isPositive ? "var(--color-danger, #ef4444)" : "var(--color-success, #22c55e)";
+  const textColor = isPositive ? "var(--color-danger, #ef4444)" : "var(--color-success, #22c55e)";
+
+  return `
+    <div class="compact-driver-item" style="background: rgba(255,255,255,0.05); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+        <span style="font-size: 0.9rem; font-weight: 500; color: rgba(255,255,255,0.9);">${cleanLabel}</span>
+        <span style="font-size: 0.9rem; font-weight: 700; color: ${textColor};">${importance.toFixed(2)}</span>
+      </div>
+      ${valueDisplay ? `<div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 6px;">${valueDisplay}</div>` : ""}
+      <div style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+        <div style="height: 100%; width: ${barWidth}%; background: ${barColor}; border-radius: 3px; transition: width 0.5s ease;"></div>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Render compact driver item with animated bar (legacy)
  * @param {object} driver - Driver object with label and weight
  * @param {string} type - Type ('positive' or 'negative')
  * @param {number} relativeImportance - Percentage of total contribution
